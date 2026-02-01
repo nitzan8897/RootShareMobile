@@ -1,0 +1,32 @@
+package com.example.rootsharemobile.data.remote
+
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
+import java.util.concurrent.TimeUnit
+
+/**
+ * Singleton Retrofit client for API calls.
+ */
+object RetrofitClient {
+
+    private val loggingInterceptor = HttpLoggingInterceptor().apply {
+        level = HttpLoggingInterceptor.Level.BODY
+    }
+
+    private val okHttpClient = OkHttpClient.Builder()
+        .addInterceptor(loggingInterceptor)
+        .connectTimeout(ApiConfig.CONNECT_TIMEOUT, TimeUnit.SECONDS)
+        .readTimeout(ApiConfig.READ_TIMEOUT, TimeUnit.SECONDS)
+        .writeTimeout(ApiConfig.WRITE_TIMEOUT, TimeUnit.SECONDS)
+        .build()
+
+    private val retrofit: Retrofit = Retrofit.Builder()
+        .baseUrl(ApiConfig.BASE_URL)
+        .client(okHttpClient)
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+
+    val apiService: ApiService = retrofit.create(ApiService::class.java)
+}
