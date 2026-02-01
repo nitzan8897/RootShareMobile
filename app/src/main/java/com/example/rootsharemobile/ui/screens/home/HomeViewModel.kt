@@ -8,6 +8,8 @@ import com.example.rootsharemobile.data.model.Plant
 import com.example.rootsharemobile.data.model.Post
 import com.example.rootsharemobile.data.repository.PlantRepository
 import com.example.rootsharemobile.data.repository.PostRepository
+import com.example.rootsharemobile.ui.components.sampleFeaturedPlants
+import com.example.rootsharemobile.ui.components.sampleFeedPosts
 import kotlinx.coroutines.launch
 
 /**
@@ -52,6 +54,19 @@ class HomeViewModel : ViewModel() {
             loadFeaturedPlants(token)
             loadFeedPosts(token)
             updateUiState()
+        }
+    }
+
+    /**
+     * Load sample/demo data when no token is available.
+     * This allows the home screen to display sample content for demo purposes.
+     */
+    fun loadSampleData() {
+        _uiState.value = HomeUiState.Loading
+        viewModelScope.launch {
+            _featuredPlants.value = sampleFeaturedPlants
+            _feedPosts.value = sampleFeedPosts
+            _uiState.value = HomeUiState.Success(sampleFeaturedPlants, sampleFeedPosts)
         }
     }
 

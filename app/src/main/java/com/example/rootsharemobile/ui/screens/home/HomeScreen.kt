@@ -67,6 +67,9 @@ fun HomeScreen(
         val token = getToken()
         if (!token.isNullOrEmpty()) {
             viewModel.loadHomeData(token)
+        } else {
+            // Load sample data for demo when no token is available
+            viewModel.loadSampleData()
         }
     }
 
@@ -103,6 +106,8 @@ fun HomeScreen(
                     val token = getToken()
                     if (!token.isNullOrEmpty()) {
                         viewModel.refresh(token)
+                    } else {
+                        viewModel.loadSampleData()
                     }
                 }
             },
