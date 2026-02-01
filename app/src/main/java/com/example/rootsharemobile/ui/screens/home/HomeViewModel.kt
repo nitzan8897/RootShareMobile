@@ -63,9 +63,13 @@ class HomeViewModel : ViewModel() {
      */
     fun loadSampleData() {
         _uiState.value = HomeUiState.Loading
+        _isLoadingPlants.value = true
+        _isLoadingPosts.value = true
         viewModelScope.launch {
             _featuredPlants.value = sampleFeaturedPlants
             _feedPosts.value = sampleFeedPosts
+            _isLoadingPlants.value = false
+            _isLoadingPosts.value = false
             _uiState.value = HomeUiState.Success(sampleFeaturedPlants, sampleFeedPosts)
         }
     }
