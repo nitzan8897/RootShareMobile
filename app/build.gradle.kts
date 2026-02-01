@@ -6,9 +6,7 @@ plugins {
 
 android {
     namespace = "com.example.rootsharemobile"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.example.rootsharemobile"
@@ -50,6 +48,40 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+
+    // Networking
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.gson)
+    implementation(libs.okhttp)
+    implementation(libs.okhttp.logging)
+    implementation(libs.gson)
+
+    // Coroutines
+    implementation(libs.coroutines.core)
+    implementation(libs.coroutines.android)
+
+    // ViewModel & LiveData (MVVM)
+    implementation(libs.lifecycle.viewmodel)
+    implementation(libs.lifecycle.viewmodel.compose)
+    implementation(libs.lifecycle.livedata)
+    implementation(libs.lifecycle.runtime.compose)
+
+    // Image loading
+    implementation(libs.coil)
+
+    // Compose Runtime LiveData (for observeAsState)
+    implementation(libs.compose.runtime.livedata)
+
+    // Material Icons Extended
+    implementation(libs.material.icons.extended)
+
+    // DataStore (for token storage)
+    implementation(libs.datastore.preferences)
+
+    // Navigation Compose
+    implementation(libs.navigation.compose)
+
+    // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
