@@ -6,9 +6,7 @@ plugins {
 
 android {
     namespace = "com.example.rootsharemobile"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.example.rootsharemobile"
@@ -50,6 +48,14 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+
+    // Material Icons Extended (for navigation icons)
+    implementation(libs.material.icons.extended)
+
+    // Navigation Compose
+    implementation(libs.navigation.compose)
+
+    // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
