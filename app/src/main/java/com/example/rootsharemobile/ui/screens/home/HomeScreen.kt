@@ -31,7 +31,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.rootsharemobile.data.model.Plant
 import com.example.rootsharemobile.data.model.Post
-import com.example.rootsharemobile.ui.components.BottomNavItem
 import com.example.rootsharemobile.ui.components.CommunityFeedSection
 import com.example.rootsharemobile.ui.components.FeaturedPlantsSection
 import com.example.rootsharemobile.ui.components.RootShareBottomNav
@@ -46,10 +45,8 @@ import kotlinx.coroutines.launch
 fun HomeScreen(
     getToken: suspend () -> String?,
     modifier: Modifier = Modifier,
-    viewModel: HomeViewModel = viewModel(),
-    onNavigate: ((BottomNavItem) -> Unit)? = null
+    viewModel: HomeViewModel = viewModel()
 ) {
-    var selectedRoute by remember { mutableStateOf("home") }
     val scrollState = rememberScrollState()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -88,16 +85,7 @@ fun HomeScreen(
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        bottomBar = {
-            RootShareBottomNav(
-                selectedRoute = selectedRoute,
-                onItemSelected = { item ->
-                    selectedRoute = item.route
-                    onNavigate?.invoke(item)
-                }
-            )
-        }
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
         PullToRefreshBox(
             isRefreshing = isRefreshing,
