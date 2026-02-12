@@ -14,7 +14,7 @@ data class Post(
     val userId: String = "",
 
     @SerializedName("plantId")
-    val plantId: String? = null,
+    val plant: Plant? = null,
 
     @SerializedName("type")
     val type: PostType = PostType.UPDATE,
