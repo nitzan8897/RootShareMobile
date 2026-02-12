@@ -11,15 +11,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.rootsharemobile.ui.components.sampleFeaturedPlants
 import com.example.rootsharemobile.ui.components.sampleFeedPosts
-import com.example.rootsharemobile.ui.screens.home.HomeScreen
+import com.example.rootsharemobile.ui.navigation.RootShareNavHost
 import com.example.rootsharemobile.ui.screens.home.HomeScreenPreviewContent
 import com.example.rootsharemobile.ui.theme.RootShareMobileTheme
 
 class MainActivity : ComponentActivity() {
-
-    // TODO: Replace with actual token from auth system
-    // For testing, you can get a token from your backend by logging in
-    private val testToken = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -27,12 +23,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             RootShareMobileTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    HomeScreen(
-                        getToken = { testToken },
-                        onNavigate = { navItem ->
-                            // TODO: Handle navigation to other screens
-                        }
-                    )
+                    RootShareNavHost()
                 }
             }
         }

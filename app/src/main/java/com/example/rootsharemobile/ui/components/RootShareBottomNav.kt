@@ -53,13 +53,20 @@ sealed class BottomNavItem(
         selectedIcon = { Icons.Filled.Person }, // Placeholder - will use custom photo icon
         unselectedIcon = { Icons.Outlined.Person }
     )
+
+    data object Profile : BottomNavItem(
+        route = "profile",
+        label = "Profile",
+        selectedIcon = { Icons.Filled.Person },
+        unselectedIcon = { Icons.Outlined.Person }
+    )
 }
 
 val bottomNavItems = listOf(
     BottomNavItem.Home,
     BottomNavItem.MyGarden,
     BottomNavItem.Community,
-    BottomNavItem.Gallery
+    BottomNavItem.Profile
 )
 
 @Composable
