@@ -1,8 +1,10 @@
 package com.example.rootsharemobile.ui.components
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChatBubble
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.Icon
@@ -43,8 +45,8 @@ sealed class BottomNavItem(
     data object Community : BottomNavItem(
         route = "community",
         label = "Community",
-        selectedIcon = { Icons.Filled.Person }, // Placeholder - will use custom users icon
-        unselectedIcon = { Icons.Outlined.Person }
+        selectedIcon = { Icons.Filled.ChatBubble },
+        unselectedIcon = { Icons.Outlined.ChatBubbleOutline }
     )
 
     data object Gallery : BottomNavItem(
