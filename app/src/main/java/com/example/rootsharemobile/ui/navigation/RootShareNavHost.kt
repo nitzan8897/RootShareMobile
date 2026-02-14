@@ -24,14 +24,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.rootsharemobile.ui.components.RootShareBottomNav
 import com.example.rootsharemobile.ui.screens.auth.AuthViewModel
 import com.example.rootsharemobile.ui.screens.auth.LoginScreen
 import com.example.rootsharemobile.ui.screens.auth.RegisterScreen
+import com.example.rootsharemobile.ui.screens.chat.ChatListScreen
+import com.example.rootsharemobile.ui.screens.chat.ChatRoomScreen
 import com.example.rootsharemobile.ui.screens.home.HomeScreen
 import com.example.rootsharemobile.ui.screens.profile.ProfileScreen
 
@@ -76,9 +80,10 @@ fun RootShareNavHost(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    // Auth routes where bottom nav should be hidden
+    // Routes where bottom nav should be hidden
     val authRoutes = listOf(NavRoutes.Login.route, NavRoutes.Register.route)
-    val showBottomNav = currentRoute !in authRoutes && isLoggedIn
+    val hiddenNavRoutes = authRoutes + listOf(NavRoutes.ChatRoom.route)
+    val showBottomNav = currentRoute !in hiddenNavRoutes && isLoggedIn
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -148,7 +153,22 @@ fun RootShareNavHost(
             }
 
             composable(NavRoutes.Community.route) {
-                PlaceholderScreen(title = "Community", subtitle = "Coming soon...")
+                ChatListScreen(
+                    onChatClick = { chatId ->
+                        navController.navigate(NavRoutes.ChatRoom.createRoute(chatId))
+                    }
+                )
+            }
+
+            composable(
+                route = NavRoutes.ChatRoom.route,
+                arguments = listOf(navArgument("chatId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val chatId = backStackEntry.arguments?.getString("chatId") ?: return@composable
+                ChatRoomScreen(
+                    chatId = chatId,
+                    onBackClick = { navController.popBackStack() }
+                )
             }
 
             composable(NavRoutes.Gallery.route) {

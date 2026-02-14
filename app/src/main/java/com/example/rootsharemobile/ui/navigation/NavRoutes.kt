@@ -11,4 +11,7 @@ sealed class NavRoutes(val route: String) {
     data object Community : NavRoutes("community")
     data object Gallery : NavRoutes("gallery")
     data object Profile : NavRoutes("profile")
+    data object ChatRoom : NavRoutes("chat_room/{chatId}") {
+        fun createRoute(chatId: String) = "chat_room/$chatId"
+    }
 }
