@@ -37,6 +37,7 @@ import com.example.rootsharemobile.ui.screens.auth.LoginScreen
 import com.example.rootsharemobile.ui.screens.auth.RegisterScreen
 import com.example.rootsharemobile.ui.screens.chat.ChatListScreen
 import com.example.rootsharemobile.ui.screens.chat.ChatRoomScreen
+import com.example.rootsharemobile.ui.screens.chat.ChatViewModel
 import com.example.rootsharemobile.ui.screens.home.HomeScreen
 import com.example.rootsharemobile.ui.screens.profile.ProfileScreen
 
@@ -51,6 +52,8 @@ fun RootShareNavHost(
     navController: NavHostController = rememberNavController(),
     authViewModel: AuthViewModel = viewModel()
 ) {
+    val chatViewModel: ChatViewModel = viewModel()
+
     val isLoggedIn by authViewModel.isLoggedIn.collectAsState()
     val currentUser by authViewModel.currentUser.collectAsState()
 
@@ -158,6 +161,7 @@ fun RootShareNavHost(
 
             composable(NavRoutes.Community.route) {
                 ChatListScreen(
+                    chatViewModel = chatViewModel,
                     onChatClick = { chatId ->
                         navController.navigate(NavRoutes.ChatRoom.createRoute(chatId))
                     }
@@ -171,6 +175,7 @@ fun RootShareNavHost(
                 val chatId = backStackEntry.arguments?.getString("chatId") ?: return@composable
                 ChatRoomScreen(
                     chatId = chatId,
+                    chatViewModel = chatViewModel,
                     onBackClick = { navController.popBackStack() }
                 )
             }

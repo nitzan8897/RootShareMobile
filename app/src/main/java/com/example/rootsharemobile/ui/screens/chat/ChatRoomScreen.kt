@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -28,6 +29,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,6 +46,7 @@ import androidx.compose.ui.unit.sp
 import com.example.rootsharemobile.ui.theme.Emerald500
 import com.example.rootsharemobile.ui.theme.Gray100
 import com.example.rootsharemobile.ui.theme.Gray400
+import com.example.rootsharemobile.ui.theme.Gray500
 import com.example.rootsharemobile.ui.theme.RootShareMobileTheme
 
 data class ChatMessage(
@@ -51,26 +56,38 @@ data class ChatMessage(
     val timestamp: String
 )
 
-private val sampleMessages = listOf(
-    ChatMessage("1", "Hey! I saw your Monstera post", isFromMe = false, "10:00 AM"),
-    ChatMessage("2", "Hi! Yes, it's still available for trade", isFromMe = true, "10:02 AM"),
-    ChatMessage("3", "I have some Pothos cuttings if you're interested", isFromMe = false, "10:03 AM"),
-    ChatMessage("4", "That sounds great! Want to meet this weekend?", isFromMe = true, "10:05 AM"),
-    ChatMessage("5", "Hey! Want to swap cuttings this weekend?", isFromMe = false, "10:06 AM")
-)
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatRoomScreen(
     chatId: String,
+    chatViewModel: ChatViewModel,
     modifier: Modifier = Modifier,
     onBackClick: () -> Unit = {}
 ) {
+    val messages by chatViewModel.messages.collectAsState()
+    val isTyping by chatViewModel.isTyping.collectAsState()
+    val listState = rememberLazyListState()
+
     val participantName = remember(chatId) {
-        sampleChats.find { it.chatId == chatId }?.participantName ?: "Chat"
+        chatViewModel.getParticipantName(chatId)
     }
 
     var messageInput by remember { mutableStateOf("") }
+
+    // Join room on enter, leave on exit
+    DisposableEffect(chatId) {
+        chatViewModel.joinRoom(chatId)
+        onDispose {
+            chatViewModel.leaveRoom()
+        }
+    }
+
+    // Auto-scroll to bottom when new messages arrive
+    LaunchedEffect(messages.size) {
+        if (messages.isNotEmpty()) {
+            listState.animateScrollToItem(0)
+        }
+    }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -96,11 +113,20 @@ fun ChatRoomScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        Text(
-                            text = participantName,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
+                        Column {
+                            Text(
+                                text = participantName,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            if (isTyping) {
+                                Text(
+                                    text = "typing...",
+                                    fontSize = 12.sp,
+                                    color = Emerald500
+                                )
+                            }
+                        }
                     }
                 },
                 navigationIcon = {
@@ -124,6 +150,7 @@ fun ChatRoomScreen(
         ) {
             // Messages
             LazyColumn(
+                state = listState,
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
@@ -131,7 +158,7 @@ fun ChatRoomScreen(
                 reverseLayout = true,
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(sampleMessages.reversed(), key = { it.id }) { message ->
+                items(messages.reversed(), key = { it.id }) { message ->
                     MessageBubble(message = message)
                 }
             }
@@ -147,7 +174,10 @@ fun ChatRoomScreen(
             ) {
                 OutlinedTextField(
                     value = messageInput,
-                    onValueChange = { messageInput = it },
+                    onValueChange = { newValue ->
+                        messageInput = newValue
+                        chatViewModel.sendTyping(newValue.isNotEmpty())
+                    },
                     placeholder = { Text("Type a message...", color = Gray400) },
                     singleLine = true,
                     shape = RoundedCornerShape(24.dp),
@@ -158,11 +188,19 @@ fun ChatRoomScreen(
                     modifier = Modifier.weight(1f)
                 )
                 IconButton(
-                    onClick = { messageInput = "" },
+                    onClick = {
+                        chatViewModel.sendMessage(messageInput)
+                        messageInput = ""
+                        chatViewModel.sendTyping(false)
+                    },
+                    enabled = messageInput.isNotBlank(),
                     modifier = Modifier
                         .size(44.dp)
                         .clip(CircleShape)
-                        .background(Emerald500)
+                        .background(
+                            if (messageInput.isNotBlank()) Emerald500
+                            else Gray400
+                        )
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.Send,
@@ -218,7 +256,22 @@ private fun MessageBubble(message: ChatMessage) {
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun ChatRoomScreenPreview() {
+    // Static preview without ViewModel
     RootShareMobileTheme {
-        ChatRoomScreen(chatId = "1")
+        Column(modifier = Modifier.fillMaxSize()) {
+            val previewMessages = listOf(
+                ChatMessage("1", "Hey! I saw your Monstera post", false, "10:00 AM"),
+                ChatMessage("2", "Hi! Yes, it's still available", true, "10:02 AM")
+            )
+            LazyColumn(
+                modifier = Modifier.weight(1f).padding(16.dp),
+                reverseLayout = true,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(previewMessages.reversed(), key = { it.id }) { message ->
+                    MessageBubble(message = message)
+                }
+            }
+        }
     }
 }
