@@ -81,6 +81,9 @@ dependencies {
     // Navigation Compose
     implementation(libs.navigation.compose)
 
+    // Socket.io
+    implementation(libs.socketio.client)
+
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

@@ -11,6 +11,9 @@ object ApiConfig {
 
     const val BASE_URL = "http://10.0.2.2:3000/api/"
 
+    // Socket.io connects to the server root (no /api/ path)
+    const val SOCKET_URL = "http://10.0.2.2:3000"
+
     // Timeout configurations (in seconds)
     const val CONNECT_TIMEOUT = 30L
     const val READ_TIMEOUT = 30L
