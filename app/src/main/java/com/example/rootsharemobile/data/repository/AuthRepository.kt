@@ -2,6 +2,7 @@ package com.example.rootsharemobile.data.repository
 
 import com.example.rootsharemobile.data.local.TokenManager
 import com.example.rootsharemobile.data.model.AuthResponse
+import com.example.rootsharemobile.data.model.GoogleTokenRequest
 import com.example.rootsharemobile.data.model.LoginRequest
 import com.example.rootsharemobile.data.model.RegisterRequest
 import com.example.rootsharemobile.data.model.User
@@ -70,6 +71,32 @@ class AuthRepository(private val tokenManager: TokenManager) {
                     401 -> "Invalid email or password"
                     400 -> "Please check your input and try again"
                     else -> "Login failed: ${response.message()}"
+                }
+                Result.failure(Exception(errorMessage))
+            }
+        } catch (e: Exception) {
+            Result.failure(Exception("Network error: ${e.message}"))
+        }
+    }
+
+    /**
+     * Sign in or register with Google ID token.
+     */
+    suspend fun googleAuth(idToken: String): Result<AuthResponse> {
+        return try {
+            val request = GoogleTokenRequest(idToken = idToken)
+            val response = apiService.googleAuth(request)
+
+            if (response.isSuccessful && response.body() != null) {
+                val authResponse = response.body()!!
+                // Save tokens and user to DataStore
+                tokenManager.saveAuth(authResponse.user, authResponse.tokens)
+                Result.success(authResponse)
+            } else {
+                val errorMessage = when (response.code()) {
+                    401 -> "Invalid Google token"
+                    400 -> "Google authentication failed"
+                    else -> "Google sign-in failed: ${response.message()}"
                 }
                 Result.failure(Exception(errorMessage))
             }

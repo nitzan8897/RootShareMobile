@@ -81,6 +81,11 @@ dependencies {
     // Navigation Compose
     implementation(libs.navigation.compose)
 
+    // Google Sign-In (Credential Manager)
+    implementation(libs.credentials)
+    implementation(libs.credentials.play.services)
+    implementation(libs.googleid)
+
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

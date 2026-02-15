@@ -5,6 +5,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
+import com.example.rootsharemobile.data.auth.GoogleAuthHelper
+import com.example.rootsharemobile.data.auth.GoogleAuthResult
 import com.example.rootsharemobile.data.local.TokenManager
 import com.example.rootsharemobile.data.model.User
 import com.example.rootsharemobile.data.repository.AuthRepository
@@ -66,6 +68,38 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                     _uiState.value = AuthUiState.Error(error.message ?: "Login failed")
                 }
             )
+        }
+    }
+
+    /**
+     * Sign in or register with Google.
+     */
+    fun signInWithGoogle(googleAuthHelper: GoogleAuthHelper) {
+        _uiState.value = AuthUiState.Loading
+        _errorMessage.value = null
+
+        viewModelScope.launch {
+            when (val googleResult = googleAuthHelper.signIn()) {
+                is GoogleAuthResult.Success -> {
+                    val result = authRepository.googleAuth(googleResult.idToken)
+                    result.fold(
+                        onSuccess = {
+                            _uiState.value = AuthUiState.Success
+                        },
+                        onFailure = { error ->
+                            _errorMessage.value = error.message
+                            _uiState.value = AuthUiState.Error(error.message ?: "Google sign-in failed")
+                        }
+                    )
+                }
+                is GoogleAuthResult.Error -> {
+                    _errorMessage.value = googleResult.message
+                    _uiState.value = AuthUiState.Error(googleResult.message)
+                }
+                GoogleAuthResult.Cancelled -> {
+                    _uiState.value = AuthUiState.Idle
+                }
+            }
         }
     }
 

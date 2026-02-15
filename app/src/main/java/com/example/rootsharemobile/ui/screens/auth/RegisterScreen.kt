@@ -1,5 +1,6 @@
 package com.example.rootsharemobile.ui.screens.auth
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -29,6 +31,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -50,11 +53,15 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.rootsharemobile.R
+import com.example.rootsharemobile.data.auth.GoogleAuthHelper
 import com.example.rootsharemobile.ui.theme.Emerald500
 import com.example.rootsharemobile.ui.theme.Gray100
+import com.example.rootsharemobile.ui.theme.Gray200
 import com.example.rootsharemobile.ui.theme.Gray500
 import com.example.rootsharemobile.ui.theme.Gray900
 import com.example.rootsharemobile.ui.theme.RootShareMobileTheme
@@ -62,6 +69,7 @@ import com.example.rootsharemobile.ui.theme.RootShareMobileTheme
 @Composable
 fun RegisterScreen(
     viewModel: AuthViewModel,
+    googleAuthHelper: GoogleAuthHelper,
     onNavigateToLogin: () -> Unit,
     onRegisterSuccess: () -> Unit,
     modifier: Modifier = Modifier
@@ -379,6 +387,35 @@ fun RegisterScreen(
             HorizontalDivider(
                 modifier = Modifier.weight(1f),
                 color = Gray100
+            )
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Google Sign-Up button
+        OutlinedButton(
+            onClick = { viewModel.signInWithGoogle(googleAuthHelper) },
+            enabled = !isLoading,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
+            shape = RoundedCornerShape(12.dp),
+            border = BorderStroke(1.dp, Gray200),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = Gray900
+            )
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_google),
+                contentDescription = "Google",
+                modifier = Modifier.size(20.dp),
+                tint = Color.Unspecified
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = "Sign up with Google",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium
             )
         }
 
