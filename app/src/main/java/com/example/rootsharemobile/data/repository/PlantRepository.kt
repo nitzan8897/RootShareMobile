@@ -5,6 +5,8 @@ import com.example.rootsharemobile.data.model.Plant
 import com.example.rootsharemobile.data.model.PlantStatus
 import com.example.rootsharemobile.data.model.UpdatePlantRequest
 import com.example.rootsharemobile.data.remote.RetrofitClient
+import com.example.rootsharemobile.data.remote.mapHttpError
+import com.example.rootsharemobile.data.remote.mapNetworkError
 
 /**
  * Repository for Plant data operations.
@@ -23,10 +25,10 @@ class PlantRepository {
             if (response.isSuccessful) {
                 Result.success(response.body() ?: emptyList())
             } else {
-                Result.failure(Exception("Failed to fetch plants: ${response.code()} ${response.message()}"))
+                Result.failure(Exception(mapHttpError(response.code(), "plants")))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(Exception(mapNetworkError(e)))
         }
     }
 
@@ -39,10 +41,10 @@ class PlantRepository {
             if (response.isSuccessful) {
                 Result.success(response.body() ?: emptyList())
             } else {
-                Result.failure(Exception("Failed to fetch featured plants: ${response.code()} ${response.message()}"))
+                Result.failure(Exception(mapHttpError(response.code(), "plants")))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(Exception(mapNetworkError(e)))
         }
     }
 
@@ -55,10 +57,10 @@ class PlantRepository {
             if (response.isSuccessful && response.body() != null) {
                 Result.success(response.body()!!)
             } else {
-                Result.failure(Exception("Failed to fetch plant: ${response.code()} ${response.message()}"))
+                Result.failure(Exception(mapHttpError(response.code(), "plant")))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(Exception(mapNetworkError(e)))
         }
     }
 
@@ -71,10 +73,10 @@ class PlantRepository {
             if (response.isSuccessful && response.body() != null) {
                 Result.success(response.body()!!)
             } else {
-                Result.failure(Exception("Failed to create plant: ${response.code()} ${response.message()}"))
+                Result.failure(Exception(mapHttpError(response.code(), "plant")))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(Exception(mapNetworkError(e)))
         }
     }
 
@@ -87,10 +89,10 @@ class PlantRepository {
             if (response.isSuccessful && response.body() != null) {
                 Result.success(response.body()!!)
             } else {
-                Result.failure(Exception("Failed to update plant: ${response.code()} ${response.message()}"))
+                Result.failure(Exception(mapHttpError(response.code(), "plant")))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(Exception(mapNetworkError(e)))
         }
     }
 
@@ -103,10 +105,10 @@ class PlantRepository {
             if (response.isSuccessful) {
                 Result.success(true)
             } else {
-                Result.failure(Exception("Failed to delete plant: ${response.code()} ${response.message()}"))
+                Result.failure(Exception(mapHttpError(response.code(), "plant")))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(Exception(mapNetworkError(e)))
         }
     }
 }
