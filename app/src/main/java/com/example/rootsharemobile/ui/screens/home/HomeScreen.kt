@@ -10,8 +10,10 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
@@ -36,7 +38,6 @@ import com.example.rootsharemobile.ui.components.FeaturedPlantsSection
 import com.example.rootsharemobile.ui.components.RootShareBottomNav
 import com.example.rootsharemobile.ui.components.sampleFeaturedPlants
 import com.example.rootsharemobile.ui.components.sampleFeedPosts
-import com.example.rootsharemobile.ui.theme.Gray500
 import com.example.rootsharemobile.ui.theme.RootShareMobileTheme
 import kotlinx.coroutines.launch
 
@@ -70,12 +71,22 @@ fun HomeScreen(
         }
     }
 
-    // Show error message
+    // Show error message with retry action
     LaunchedEffect(errorMessage) {
         errorMessage?.let { message ->
             scope.launch {
-                snackbarHostState.showSnackbar(message)
+                val result = snackbarHostState.showSnackbar(
+                    message = message,
+                    actionLabel = "Retry",
+                    duration = SnackbarDuration.Long
+                )
                 viewModel.clearError()
+                if (result == SnackbarResult.ActionPerformed) {
+                    val token = getToken()
+                    if (!token.isNullOrEmpty()) {
+                        viewModel.refresh(token)
+                    }
+                }
             }
         }
     }
@@ -110,28 +121,6 @@ fun HomeScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         CircularProgressIndicator()
-                    }
-                }
-
-                is HomeUiState.Error -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = "Failed to load data",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.error
-                            )
-                            Text(
-                                text = "Pull down to retry",
-                                fontSize = 14.sp,
-                                color = Gray500,
-                                modifier = Modifier.padding(top = 8.dp)
-                            )
-                        }
                     }
                 }
 
