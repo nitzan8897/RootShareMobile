@@ -85,7 +85,7 @@ class HomeViewModel : ViewModel() {
                 _featuredPlants.value = plants
             },
             onFailure = { error ->
-                _errorMessage.value = "Failed to load plants: ${error.message}"
+                _errorMessage.value = error.message
             }
         )
         _isLoadingPlants.value = false
@@ -102,7 +102,7 @@ class HomeViewModel : ViewModel() {
                 _feedPosts.value = posts
             },
             onFailure = { error ->
-                _errorMessage.value = "Failed to load posts: ${error.message}"
+                _errorMessage.value = error.message
             }
         )
         _isLoadingPosts.value = false
@@ -125,11 +125,11 @@ class HomeViewModel : ViewModel() {
     private fun updateUiState() {
         val plants = _featuredPlants.value ?: emptyList()
         val posts = _feedPosts.value ?: emptyList()
-        val error = _errorMessage.value
 
+        // Show content even if there were errors - errors are shown as snackbars.
+        // Only show empty state if both lists are empty AND there was no error.
         _uiState.value = when {
-            error != null -> HomeUiState.Error(error)
-            plants.isEmpty() && posts.isEmpty() -> HomeUiState.Empty
+            plants.isEmpty() && posts.isEmpty() && _errorMessage.value == null -> HomeUiState.Empty
             else -> HomeUiState.Success(plants, posts)
         }
     }
@@ -145,5 +145,4 @@ sealed class HomeUiState {
         val featuredPlants: List<Plant>,
         val feedPosts: List<Post>
     ) : HomeUiState()
-    data class Error(val message: String) : HomeUiState()
 }
