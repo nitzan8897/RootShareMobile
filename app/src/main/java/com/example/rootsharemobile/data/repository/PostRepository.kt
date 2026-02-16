@@ -4,6 +4,8 @@ import com.example.rootsharemobile.data.model.CreatePostRequest
 import com.example.rootsharemobile.data.model.Post
 import com.example.rootsharemobile.data.model.UpdatePostRequest
 import com.example.rootsharemobile.data.remote.RetrofitClient
+import com.example.rootsharemobile.data.remote.mapHttpError
+import com.example.rootsharemobile.data.remote.mapNetworkError
 
 /**
  * Repository for Post data operations.
@@ -22,10 +24,10 @@ class PostRepository {
             if (response.isSuccessful) {
                 Result.success(response.body() ?: emptyList())
             } else {
-                Result.failure(Exception("Failed to fetch posts: ${response.code()} ${response.message()}"))
+                Result.failure(Exception(mapHttpError(response.code(), "posts")))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(Exception(mapNetworkError(e)))
         }
     }
 
@@ -38,10 +40,10 @@ class PostRepository {
             if (response.isSuccessful && response.body() != null) {
                 Result.success(response.body()!!)
             } else {
-                Result.failure(Exception("Failed to fetch post: ${response.code()} ${response.message()}"))
+                Result.failure(Exception(mapHttpError(response.code(), "post")))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(Exception(mapNetworkError(e)))
         }
     }
 
@@ -54,10 +56,10 @@ class PostRepository {
             if (response.isSuccessful && response.body() != null) {
                 Result.success(response.body()!!)
             } else {
-                Result.failure(Exception("Failed to create post: ${response.code()} ${response.message()}"))
+                Result.failure(Exception(mapHttpError(response.code(), "post")))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(Exception(mapNetworkError(e)))
         }
     }
 
@@ -70,10 +72,10 @@ class PostRepository {
             if (response.isSuccessful && response.body() != null) {
                 Result.success(response.body()!!)
             } else {
-                Result.failure(Exception("Failed to update post: ${response.code()} ${response.message()}"))
+                Result.failure(Exception(mapHttpError(response.code(), "post")))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(Exception(mapNetworkError(e)))
         }
     }
 
@@ -86,10 +88,10 @@ class PostRepository {
             if (response.isSuccessful) {
                 Result.success(true)
             } else {
-                Result.failure(Exception("Failed to delete post: ${response.code()} ${response.message()}"))
+                Result.failure(Exception(mapHttpError(response.code(), "post")))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(Exception(mapNetworkError(e)))
         }
     }
 }

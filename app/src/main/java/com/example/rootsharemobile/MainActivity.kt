@@ -10,6 +10,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.rootsharemobile.data.auth.GoogleAuthHelper
+import com.example.rootsharemobile.data.local.TokenManager
+import com.example.rootsharemobile.data.remote.RetrofitClient
 import com.example.rootsharemobile.ui.components.sampleFeaturedPlants
 import com.example.rootsharemobile.ui.components.sampleFeedPosts
 import com.example.rootsharemobile.ui.navigation.RootShareNavHost
@@ -22,6 +24,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val googleAuthHelper = GoogleAuthHelper(this)
+
+        // Initialize RetrofitClient with TokenManager for automatic token refresh
+        RetrofitClient.init(TokenManager(applicationContext))
 
         setContent {
             RootShareMobileTheme {
