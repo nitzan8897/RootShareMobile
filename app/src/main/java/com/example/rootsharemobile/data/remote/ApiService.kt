@@ -1,6 +1,9 @@
 package com.example.rootsharemobile.data.remote
 
 import com.example.rootsharemobile.data.model.AuthResponse
+import com.example.rootsharemobile.data.model.ChatMessageResponse
+import com.example.rootsharemobile.data.model.ChatResponse
+import com.example.rootsharemobile.data.model.CreateChatRequest
 import com.example.rootsharemobile.data.model.CreatePlantRequest
 import com.example.rootsharemobile.data.model.CreatePostRequest
 import com.example.rootsharemobile.data.model.GoogleTokenRequest
@@ -185,6 +188,32 @@ interface ApiService {
         @Header("Authorization") token: String,
         @Path("id") id: String
     ): Response<DeleteResponse>
+    // ==================== CHATS ====================
+
+    @GET("chats")
+    suspend fun getChats(
+        @Header("Authorization") token: String
+    ): Response<List<ChatResponse>>
+
+    @POST("chats")
+    suspend fun createOrGetChat(
+        @Header("Authorization") token: String,
+        @Body request: CreateChatRequest
+    ): Response<ChatResponse>
+
+    @GET("chats/{chatId}/messages")
+    suspend fun getChatMessages(
+        @Header("Authorization") token: String,
+        @Path("chatId") chatId: String,
+        @Query("limit") limit: Int = 30,
+        @Query("page") page: Int = 1
+    ): Response<List<ChatMessageResponse>>
+
+    @POST("chats/{chatId}/read")
+    suspend fun markChatAsRead(
+        @Header("Authorization") token: String,
+        @Path("chatId") chatId: String
+    ): Response<Unit>
 }
 
 /**

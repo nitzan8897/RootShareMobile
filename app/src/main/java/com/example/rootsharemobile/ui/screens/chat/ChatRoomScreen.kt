@@ -68,7 +68,8 @@ fun ChatRoomScreen(
     val isTyping by chatViewModel.isTyping.collectAsState()
     val listState = rememberLazyListState()
 
-    val participantName = remember(chatId) {
+    val chats by chatViewModel.chats.collectAsState()
+    val participantName = remember(chatId, chats) {
         chatViewModel.getParticipantName(chatId)
     }
 

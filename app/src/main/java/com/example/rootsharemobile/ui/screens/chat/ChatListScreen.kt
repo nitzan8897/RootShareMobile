@@ -2,12 +2,14 @@ package com.example.rootsharemobile.ui.screens.chat
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -74,6 +76,7 @@ fun ChatListScreen(
 ) {
     val chats by chatViewModel.chats.collectAsState()
     val connectionStatus by chatViewModel.connectionStatus.collectAsState()
+    val isLoading by chatViewModel.isLoading.collectAsState()
 
     var searchQuery by remember { mutableStateOf("") }
 
@@ -156,12 +159,36 @@ fun ChatListScreen(
         )
 
         // Chat list
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(filteredChats, key = { it.chatId }) { chat ->
-                ChatItemRow(
-                    chatPreview = chat,
-                    onClick = { onChatClick(chat.chatId) }
-                )
+        when {
+            isLoading && filteredChats.isEmpty() -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = Emerald500)
+                }
+            }
+            filteredChats.isEmpty() -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "No chats yet",
+                        color = Gray400,
+                        fontSize = 16.sp
+                    )
+                }
+            }
+            else -> {
+                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    items(filteredChats, key = { it.chatId }) { chat ->
+                        ChatItemRow(
+                            chatPreview = chat,
+                            onClick = { onChatClick(chat.chatId) }
+                        )
+                    }
+                }
             }
         }
     }
