@@ -117,13 +117,13 @@ object SocketManager {
         Log.d(TAG, "Leaving room: $roomId")
     }
 
-    fun sendMessage(roomId: String, content: String) {
+    fun sendMessage(chatId: String, content: String) {
         val payload = JSONObject().apply {
-            put("roomId", roomId)
+            put("chatId", chatId)
             put("content", content)
         }
-        emit("message", payload)
-        Log.d(TAG, "Message sent to $roomId")
+        emit("send_message", payload)
+        Log.d(TAG, "Message sent to $chatId")
     }
 
     fun sendTyping(roomId: String, isTyping: Boolean) {
