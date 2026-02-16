@@ -1,5 +1,6 @@
 package com.example.rootsharemobile.data.repository
 
+import android.util.Log
 import com.example.rootsharemobile.data.local.TokenManager
 import com.example.rootsharemobile.data.model.AuthResponse
 import com.example.rootsharemobile.data.model.GoogleTokenRequest
@@ -84,6 +85,7 @@ class AuthRepository(private val tokenManager: TokenManager) {
      */
     suspend fun googleAuth(idToken: String): Result<AuthResponse> {
         return try {
+            Log.d("AuthRepo", "TEST GOOGLE AUTH, idToken: $idToken")
             val request = GoogleTokenRequest(idToken = idToken)
             val response = apiService.googleAuth(request)
 
