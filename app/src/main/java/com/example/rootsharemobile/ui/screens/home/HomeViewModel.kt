@@ -134,4 +134,5 @@ sealed class HomeUiState {
         val featuredPlants: List<Plant>,
         val feedPosts: List<Post>
     ) : HomeUiState()
+    data class Error(val message: String) : HomeUiState()
 }

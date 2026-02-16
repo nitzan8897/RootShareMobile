@@ -123,7 +123,7 @@ fun HomeScreen(
                     }
                 }
 
-                is HomeUiState.Empty, is HomeUiState.Success -> {
+                is HomeUiState.Error, is HomeUiState.Empty, is HomeUiState.Success -> {
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
