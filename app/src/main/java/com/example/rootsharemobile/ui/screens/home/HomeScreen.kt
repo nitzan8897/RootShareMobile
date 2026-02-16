@@ -66,8 +66,7 @@ fun HomeScreen(
         if (!token.isNullOrEmpty()) {
             viewModel.loadHomeData(token)
         } else {
-            // Load sample data for demo when no token is available
-            viewModel.loadSampleData()
+            viewModel.setError("Authentication required. Please log in again.")
         }
     }
 
@@ -106,7 +105,7 @@ fun HomeScreen(
                     if (!token.isNullOrEmpty()) {
                         viewModel.refresh(token)
                     } else {
-                        viewModel.loadSampleData()
+                        viewModel.setError("Authentication required. Please log in again.")
                     }
                 }
             },
@@ -124,7 +123,7 @@ fun HomeScreen(
                     }
                 }
 
-                is HomeUiState.Empty, is HomeUiState.Success -> {
+                is HomeUiState.Error, is HomeUiState.Empty, is HomeUiState.Success -> {
                     Column(
                         modifier = Modifier
                             .fillMaxSize()

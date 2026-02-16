@@ -8,8 +8,6 @@ import com.example.rootsharemobile.data.model.Plant
 import com.example.rootsharemobile.data.model.Post
 import com.example.rootsharemobile.data.repository.PlantRepository
 import com.example.rootsharemobile.data.repository.PostRepository
-import com.example.rootsharemobile.ui.components.sampleFeaturedPlants
-import com.example.rootsharemobile.ui.components.sampleFeedPosts
 import kotlinx.coroutines.launch
 
 /**
@@ -58,23 +56,6 @@ class HomeViewModel : ViewModel() {
     }
 
     /**
-     * Load sample/demo data when no token is available.
-     * This allows the home screen to display sample content for demo purposes.
-     */
-    fun loadSampleData() {
-        _uiState.value = HomeUiState.Loading
-        _isLoadingPlants.value = true
-        _isLoadingPosts.value = true
-        viewModelScope.launch {
-            _featuredPlants.value = sampleFeaturedPlants
-            _feedPosts.value = sampleFeedPosts
-            _isLoadingPlants.value = false
-            _isLoadingPosts.value = false
-            _uiState.value = HomeUiState.Success(sampleFeaturedPlants, sampleFeedPosts)
-        }
-    }
-
-    /**
      * Load featured plants from all users.
      */
     private suspend fun loadFeaturedPlants(token: String) {
@@ -116,6 +97,14 @@ class HomeViewModel : ViewModel() {
     }
 
     /**
+     * Set an error state with a message.
+     */
+    fun setError(message: String) {
+        _errorMessage.value = message
+        _uiState.value = HomeUiState.Error(message)
+    }
+
+    /**
      * Clear error message after it's been shown.
      */
     fun clearError() {
@@ -145,4 +134,5 @@ sealed class HomeUiState {
         val featuredPlants: List<Plant>,
         val feedPosts: List<Post>
     ) : HomeUiState()
+    data class Error(val message: String) : HomeUiState()
 }

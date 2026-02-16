@@ -9,6 +9,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import com.example.rootsharemobile.data.auth.GoogleAuthHelper
 import com.example.rootsharemobile.data.local.TokenManager
 import com.example.rootsharemobile.data.remote.RetrofitClient
 import com.example.rootsharemobile.ui.components.sampleFeaturedPlants
@@ -22,6 +23,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        val googleAuthHelper = GoogleAuthHelper(this)
 
         // Initialize RetrofitClient with TokenManager for automatic token refresh
         RetrofitClient.init(TokenManager(applicationContext))
@@ -29,7 +31,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             RootShareMobileTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    RootShareNavHost()
+                    RootShareNavHost(googleAuthHelper = googleAuthHelper)
                 }
             }
         }

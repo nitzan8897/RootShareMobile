@@ -28,6 +28,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.rootsharemobile.data.auth.GoogleAuthHelper
 import com.example.rootsharemobile.ui.components.RootShareBottomNav
 import com.example.rootsharemobile.ui.screens.auth.AuthViewModel
 import com.example.rootsharemobile.ui.screens.auth.LoginScreen
@@ -41,6 +42,7 @@ import com.example.rootsharemobile.ui.screens.profile.ProfileScreen
  */
 @Composable
 fun RootShareNavHost(
+    googleAuthHelper: GoogleAuthHelper,
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
     authViewModel: AuthViewModel = viewModel()
@@ -107,6 +109,7 @@ fun RootShareNavHost(
             composable(NavRoutes.Login.route) {
                 LoginScreen(
                     viewModel = authViewModel,
+                    googleAuthHelper = googleAuthHelper,
                     onNavigateToRegister = {
                         authViewModel.resetState()
                         navController.navigate(NavRoutes.Register.route)
@@ -123,6 +126,7 @@ fun RootShareNavHost(
             composable(NavRoutes.Register.route) {
                 RegisterScreen(
                     viewModel = authViewModel,
+                    googleAuthHelper = googleAuthHelper,
                     onNavigateToLogin = {
                         authViewModel.resetState()
                         navController.popBackStack()
