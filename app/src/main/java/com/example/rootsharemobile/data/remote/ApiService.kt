@@ -85,6 +85,15 @@ interface ApiService {
     // ==================== USERS ====================
 
     /**
+     * Update the current user's profile (username, etc.).
+     */
+    @retrofit2.http.PUT("users/profile")
+    suspend fun updateProfile(
+        @Header("Authorization") token: String,
+        @Body body: Map<String, String>
+    ): Response<User>
+
+    /**
      * Upload a profile image (multipart).
      * Returns the updated User with localProfileImageUrl set.
      */
