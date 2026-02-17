@@ -200,6 +200,11 @@ class AuthRepository(
         }
     }
 
+    /** Remove the locally stored profile image URL so Glide falls back to the server URL. */
+    suspend fun removeLocalProfileImage() {
+        userDao.clearLocalProfileImage()
+    }
+
     /** Convenience accessor for the current access token. */
     suspend fun getAccessToken(): String? = tokenManager.getAccessToken()
 

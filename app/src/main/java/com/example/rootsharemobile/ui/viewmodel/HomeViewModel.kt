@@ -74,16 +74,23 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val _errorMessage = MutableLiveData<String?>(null)
     val errorMessage: LiveData<String?> = _errorMessage
 
+    // Prevents redundant API calls when switching tabs — Room LiveData delivers
+    // cached data instantly, so the UI still feels snappy on return visits.
+    private var hasInitiallyLoaded = false
+
     // -------------------------------------------------------------------------
     // Operations called by HomeFragment
     // -------------------------------------------------------------------------
 
     /**
      * Trigger a full home-screen data load.
-     * Fetches featured plants and community posts from the API in parallel,
-     * persists results to Room, then the Room LiveData above auto-updates.
+     * Skipped on tab switches after the first load — Room LiveData delivers
+     * the cached data instantly without a network round-trip.
+     * Use [refresh] for explicit pull-to-refresh.
      */
     fun loadHomeData(accessToken: String) {
+        if (hasInitiallyLoaded) return
+        hasInitiallyLoaded = true
         _uiState.value = HomeUiState.Loading
         viewModelScope.launch {
             loadFeaturedPlants(accessToken)
@@ -92,10 +99,15 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
-     * Pull-to-refresh: re-fetch all data.
-     * Identical to [loadHomeData] — provided as a named alias for clarity.
+     * Pull-to-refresh: always re-fetches all data regardless of the flag.
      */
-    fun refresh(accessToken: String) = loadHomeData(accessToken)
+    fun refresh(accessToken: String) {
+        _uiState.value = HomeUiState.Loading
+        viewModelScope.launch {
+            loadFeaturedPlants(accessToken)
+            loadFeedPosts(accessToken)
+        }
+    }
 
     fun clearError() {
         _errorMessage.value = null

@@ -137,6 +137,26 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
+     * Suspend version of logout — the caller awaits completion before navigating.
+     * This prevents auto-login in LoginFragment (which observes isLoggedIn) by
+     * ensuring the DataStore token is cleared before the Login screen appears.
+     */
+    suspend fun logoutSuspend() {
+        authRepository.logout()
+        _authState.value = AuthUiState.Idle
+    }
+
+    /**
+     * Fetch the current user from the API and sync to Room.
+     * ProfileFragment calls this on view creation so the profile data is always fresh.
+     */
+    fun fetchCurrentUser() {
+        viewModelScope.launch {
+            authRepository.getCurrentUser()
+        }
+    }
+
+    /**
      * Upload a new profile picture.
      * Fragments observe [uploadState] for progress and result.
      */
@@ -148,6 +168,16 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                 onSuccess = { UploadState.Success },
                 onFailure = { UploadState.Error(it.message ?: "Upload failed.") }
             )
+        }
+    }
+
+    /**
+     * Remove the custom profile photo and revert to the Google/default photo.
+     * Clears localProfileImageUrl from Room so Glide falls back to the server URL.
+     */
+    fun removeProfileImage() {
+        viewModelScope.launch {
+            authRepository.removeLocalProfileImage()
         }
     }
 
