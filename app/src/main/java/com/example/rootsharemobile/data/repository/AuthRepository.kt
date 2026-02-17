@@ -205,6 +205,25 @@ class AuthRepository(
         userDao.clearLocalProfileImage()
     }
 
+    /** Update the user's profile on the server and sync to Room. */
+    suspend fun updateProfile(username: String): Result<User> {
+        return try {
+            val token = tokenManager.getAccessToken()
+                ?: return Result.failure(Exception("Not authenticated"))
+            val body = mapOf("username" to username)
+            val response = apiService.updateProfile("Bearer $token", body)
+            if (response.isSuccessful) {
+                val user = response.body()!!
+                userDao.insertUser(user.toEntity())
+                Result.success(user)
+            } else {
+                Result.failure(Exception("Update failed: ${response.message()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(Exception("Network error: ${e.message}"))
+        }
+    }
+
     /** Convenience accessor for the current access token. */
     suspend fun getAccessToken(): String? = tokenManager.getAccessToken()
 

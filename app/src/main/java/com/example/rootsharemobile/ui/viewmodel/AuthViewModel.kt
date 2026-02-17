@@ -181,6 +181,35 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    // -------------------------------------------------------------------------
+    // Profile editing
+    // -------------------------------------------------------------------------
+
+    sealed class ProfileUpdateState {
+        object Idle : ProfileUpdateState()
+        object Saving : ProfileUpdateState()
+        object Success : ProfileUpdateState()
+        data class Error(val message: String) : ProfileUpdateState()
+    }
+
+    private val _profileUpdateState = MutableLiveData<ProfileUpdateState>(ProfileUpdateState.Idle)
+    val profileUpdateState: LiveData<ProfileUpdateState> = _profileUpdateState
+
+    fun updateProfile(username: String) {
+        _profileUpdateState.value = ProfileUpdateState.Saving
+        viewModelScope.launch {
+            val result = authRepository.updateProfile(username)
+            _profileUpdateState.value = result.fold(
+                onSuccess = { ProfileUpdateState.Success },
+                onFailure = { ProfileUpdateState.Error(it.message ?: "Update failed.") }
+            )
+        }
+    }
+
+    fun resetProfileUpdateState() {
+        _profileUpdateState.value = ProfileUpdateState.Idle
+    }
+
     /** Reset upload state after the Fragment has handled the result. */
     fun resetUploadState() {
         _uploadState.value = UploadState.Idle
