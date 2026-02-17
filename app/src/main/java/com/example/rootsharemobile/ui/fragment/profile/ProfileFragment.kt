@@ -27,15 +27,6 @@ import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.File
 
-/**
- * Profile screen Fragment.
- *
- * Displays the current user's profile data (sourced from Room via [AuthViewModel])
- * and allows changing the profile picture via camera or gallery.
- *
- * MVVM: the Fragment only reads from LiveData and calls ViewModel methods —
- * no direct database or network access.
- */
 class ProfileFragment : Fragment() {
 
     private var _binding: FragmentProfileBinding? = null
@@ -43,28 +34,21 @@ class ProfileFragment : Fragment() {
 
     private val authViewModel: AuthViewModel by viewModels()
 
-    // URI used when taking a photo with the camera
     private var cameraImageUri: Uri? = null
+    private var isEditMode = false
 
     // ── Activity Result launchers ────────────────────────────────────────────
 
-    /** Opens the gallery for image selection. */
     private val galleryLauncher = registerForActivityResult(
         ActivityResultContracts.GetContent()
-    ) { uri ->
-        uri?.let { handleSelectedImage(it) }
-    }
+    ) { uri -> uri?.let { handleSelectedImage(it) } }
 
-    /** Opens the camera to capture a new photo. */
     private val cameraLauncher = registerForActivityResult(
         ActivityResultContracts.TakePicture()
     ) { success ->
-        if (success) {
-            cameraImageUri?.let { handleSelectedImage(it) }
-        }
+        if (success) cameraImageUri?.let { handleSelectedImage(it) }
     }
 
-    /** Requests camera permission before opening the camera. */
     private val cameraPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
@@ -74,9 +58,7 @@ class ProfileFragment : Fragment() {
     // ── Lifecycle ────────────────────────────────────────────────────────────
 
     override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
         _binding = FragmentProfileBinding.inflate(inflater, container, false)
         return binding.root
@@ -84,25 +66,19 @@ class ProfileFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        // Fetch fresh user data from API so profile is populated on first open
         authViewModel.fetchCurrentUser()
         observeViewModel()
         setupClickListeners()
     }
 
-    // ── LiveData observers ────────────────────────────────────────────────────
+    // ── LiveData observers ──────────────────────────────────────────────────
 
     private fun observeViewModel() {
-        // User data comes from the Room database via AuthViewModel
         authViewModel.currentUser.observe(viewLifecycleOwner) { user ->
             if (user != null) {
                 binding.textUsername.text = user.username
                 binding.textEmail.text = user.email
 
-                // Determine which image URL to display (local server upload takes priority).
-                // Both fields may be relative paths (/uploads/...) so always resolve them
-                // through ApiConfig.resolveImageUrl() to get a full http(s) URL.
                 val imageUrl = when {
                     !user.localProfileImageUrl.isNullOrBlank() ->
                         ApiConfig.resolveImageUrl(user.localProfileImageUrl)
@@ -124,7 +100,6 @@ class ProfileFragment : Fragment() {
             }
         }
 
-        // Upload state
         authViewModel.uploadState.observe(viewLifecycleOwner) { state ->
             when (state) {
                 is AuthViewModel.UploadState.Idle -> {
@@ -154,26 +129,79 @@ class ProfileFragment : Fragment() {
                 }
             }
         }
+
+        authViewModel.profileUpdateState.observe(viewLifecycleOwner) { state ->
+            when (state) {
+                is AuthViewModel.ProfileUpdateState.Idle -> { /* no-op */ }
+                is AuthViewModel.ProfileUpdateState.Saving -> {
+                    binding.btnEditProfile.isEnabled = false
+                }
+                is AuthViewModel.ProfileUpdateState.Success -> {
+                    binding.btnEditProfile.isEnabled = true
+                    exitEditMode()
+                    showSnackbar(getString(R.string.msg_profile_updated))
+                    authViewModel.resetProfileUpdateState()
+                }
+                is AuthViewModel.ProfileUpdateState.Error -> {
+                    binding.btnEditProfile.isEnabled = true
+                    showSnackbar(state.message)
+                    authViewModel.resetProfileUpdateState()
+                }
+            }
+        }
     }
 
-    // ── Click listeners ───────────────────────────────────────────────────────
+    // ── Click listeners ─────────────────────────────────────────────────────
 
     private fun setupClickListeners() {
-        binding.btnEditPhoto.setOnClickListener {
-            showPhotoPickerDialog()
-        }
+        binding.btnEditPhoto.setOnClickListener { showPhotoPickerDialog() }
 
-        // Await logout completion BEFORE navigating so LoginFragment's isLoggedIn
-        // observer sees false (not the still-valid token) and doesn't auto-login.
         binding.btnLogout.setOnClickListener {
             viewLifecycleOwner.lifecycleScope.launch {
                 authViewModel.logoutSuspend()
                 findNavController().navigate(R.id.action_profile_to_login)
             }
         }
+
+        binding.btnEditProfile.setOnClickListener {
+            if (isEditMode) saveProfile() else enterEditMode()
+        }
     }
 
-    // ── Photo picker ─────────────────────────────────────────────────────────
+    // ── Edit mode ───────────────────────────────────────────────────────────
+
+    private fun enterEditMode() {
+        isEditMode = true
+        val currentUsername = authViewModel.currentUser.value?.username ?: ""
+
+        binding.textUsername.visibility = View.GONE
+        binding.inputLayoutUsername.visibility = View.VISIBLE
+        binding.editUsername.setText(currentUsername)
+
+        binding.btnEditProfile.text = getString(R.string.btn_save_profile)
+        binding.btnEditProfile.setIconResource(R.drawable.ic_check)
+    }
+
+    private fun exitEditMode() {
+        isEditMode = false
+        binding.textUsername.visibility = View.VISIBLE
+        binding.inputLayoutUsername.visibility = View.GONE
+
+        binding.btnEditProfile.text = getString(R.string.btn_edit_profile)
+        binding.btnEditProfile.setIconResource(R.drawable.ic_edit_pencil)
+    }
+
+    private fun saveProfile() {
+        val newUsername = binding.editUsername.text.toString().trim()
+        if (newUsername.isBlank() || newUsername.length < 3) {
+            binding.inputLayoutUsername.error = "Username must be at least 3 characters"
+            return
+        }
+        binding.inputLayoutUsername.error = null
+        authViewModel.updateProfile(newUsername)
+    }
+
+    // ── Photo picker ────────────────────────────────────────────────────────
 
     private fun showPhotoPickerDialog() {
         val hasCustomPhoto = !authViewModel.currentUser.value?.localProfileImageUrl.isNullOrBlank()
@@ -208,7 +236,6 @@ class ProfileFragment : Fragment() {
             ContextCompat.checkSelfPermission(
                 requireContext(), Manifest.permission.CAMERA
             ) == PackageManager.PERMISSION_GRANTED -> openCamera()
-
             else -> cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
         }
     }
@@ -226,12 +253,8 @@ class ProfileFragment : Fragment() {
         cameraLauncher.launch(cameraImageUri)
     }
 
-    // ── Image upload ─────────────────────────────────────────────────────────
+    // ── Image upload ────────────────────────────────────────────────────────
 
-    /**
-     * Convert the selected [Uri] to a [MultipartBody.Part] and pass it to
-     * the ViewModel for upload. The Fragment does not perform the upload itself.
-     */
     private fun handleSelectedImage(uri: Uri) {
         val context = requireContext()
         val inputStream = context.contentResolver.openInputStream(uri) ?: return
@@ -240,11 +263,10 @@ class ProfileFragment : Fragment() {
 
         val requestBody = tempFile.asRequestBody("image/jpeg".toMediaTypeOrNull())
         val imagePart = MultipartBody.Part.createFormData("image", tempFile.name, requestBody)
-
         authViewModel.uploadProfileImage(imagePart)
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
+    // ── Helpers ─────────────────────────────────────────────────────────────
 
     private fun showSnackbar(message: String) {
         Snackbar.make(binding.root, message, Snackbar.LENGTH_LONG).show()
