@@ -9,6 +9,7 @@ import com.example.rootsharemobile.data.model.RegisterRequest
 import com.example.rootsharemobile.data.model.User
 import com.example.rootsharemobile.data.remote.RetrofitClient
 import kotlinx.coroutines.flow.Flow
+import okhttp3.MultipartBody
 
 /**
  * Repository for authentication operations.
@@ -186,6 +187,28 @@ class AuthRepository(private val tokenManager: TokenManager) {
             }
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }
+
+    /**
+     * Upload a profile image.
+     */
+    suspend fun uploadProfileImage(imagePart: MultipartBody.Part): Result<User> {
+        return try {
+            val accessToken = tokenManager.getAccessToken()
+                ?: return Result.failure(Exception("Not authenticated"))
+
+            val response = apiService.uploadProfileImage("Bearer $accessToken", imagePart)
+
+            if (response.isSuccessful && response.body() != null) {
+                val user = response.body()!!
+                tokenManager.saveUser(user)
+                Result.success(user)
+            } else {
+                Result.failure(Exception("Failed to upload image: ${response.message()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(Exception("Network error: ${e.message}"))
         }
     }
 

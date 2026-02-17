@@ -19,6 +19,9 @@ data class User(
     @SerializedName("profileImageUrl")
     val profileImageUrl: String? = null,
 
+    @SerializedName("localProfileImageUrl")
+    val localProfileImageUrl: String? = null,
+
     @SerializedName("role")
     val role: UserRole = UserRole.USER,
 
