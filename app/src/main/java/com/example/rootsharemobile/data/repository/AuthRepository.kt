@@ -144,7 +144,7 @@ class AuthRepository(
      * Always succeeds from the UI's perspective so the user is never stuck.
      */
     suspend fun logout(): Result<Boolean> {
-        return try {
+        try {
             val accessToken = tokenManager.getAccessToken()
             if (accessToken != null) {
                 apiService.logout("Bearer $accessToken")
@@ -154,7 +154,8 @@ class AuthRepository(
         } finally {
             tokenManager.clearAuth()
             userDao.deleteAllUsers()
-        }.let { Result.success(true) }
+        }
+        return Result.success(true)
     }
 
     /**
