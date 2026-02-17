@@ -4,7 +4,6 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
-import android.provider.MediaStore
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -13,6 +12,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.bumptech.glide.Glide
 import com.example.rootsharemobile.R
@@ -21,6 +21,7 @@ import com.example.rootsharemobile.databinding.FragmentProfileBinding
 import com.example.rootsharemobile.ui.viewmodel.AuthViewModel
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
+import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
@@ -84,6 +85,8 @@ class ProfileFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        // Fetch fresh user data from API so profile is populated on first open
+        authViewModel.fetchCurrentUser()
         observeViewModel()
         setupClickListeners()
     }
@@ -97,9 +100,12 @@ class ProfileFragment : Fragment() {
                 binding.textUsername.text = user.username
                 binding.textEmail.text = user.email
 
-                // Determine which image URL to display (local takes priority)
+                // Determine which image URL to display (local server upload takes priority).
+                // Both fields may be relative paths (/uploads/...) so always resolve them
+                // through ApiConfig.resolveImageUrl() to get a full http(s) URL.
                 val imageUrl = when {
-                    !user.localProfileImageUrl.isNullOrBlank() -> user.localProfileImageUrl
+                    !user.localProfileImageUrl.isNullOrBlank() ->
+                        ApiConfig.resolveImageUrl(user.localProfileImageUrl)
                     !user.profileImageUrl.isNullOrBlank() ->
                         ApiConfig.resolveImageUrl(user.profileImageUrl)
                     else -> null
@@ -123,25 +129,25 @@ class ProfileFragment : Fragment() {
             when (state) {
                 is AuthViewModel.UploadState.Idle -> {
                     binding.progressUpload.visibility = View.GONE
-                    binding.btnChangePhoto.isEnabled = true
+                    binding.btnEditPhoto.isEnabled = true
                     binding.textUploadStatus.visibility = View.GONE
                 }
                 is AuthViewModel.UploadState.Uploading -> {
                     binding.progressUpload.visibility = View.VISIBLE
-                    binding.btnChangePhoto.isEnabled = false
+                    binding.btnEditPhoto.isEnabled = false
                     binding.textUploadStatus.text = getString(R.string.uploading_photo)
                     binding.textUploadStatus.visibility = View.VISIBLE
                 }
                 is AuthViewModel.UploadState.Success -> {
                     binding.progressUpload.visibility = View.GONE
-                    binding.btnChangePhoto.isEnabled = true
+                    binding.btnEditPhoto.isEnabled = true
                     binding.textUploadStatus.text = getString(R.string.msg_photo_uploaded)
                     binding.textUploadStatus.visibility = View.VISIBLE
                     authViewModel.resetUploadState()
                 }
                 is AuthViewModel.UploadState.Error -> {
                     binding.progressUpload.visibility = View.GONE
-                    binding.btnChangePhoto.isEnabled = true
+                    binding.btnEditPhoto.isEnabled = true
                     binding.textUploadStatus.visibility = View.GONE
                     showSnackbar(state.message)
                     authViewModel.resetUploadState()
@@ -153,31 +159,44 @@ class ProfileFragment : Fragment() {
     // ── Click listeners ───────────────────────────────────────────────────────
 
     private fun setupClickListeners() {
-        binding.btnChangePhoto.setOnClickListener {
+        binding.btnEditPhoto.setOnClickListener {
             showPhotoPickerDialog()
         }
 
+        // Await logout completion BEFORE navigating so LoginFragment's isLoggedIn
+        // observer sees false (not the still-valid token) and doesn't auto-login.
         binding.btnLogout.setOnClickListener {
-            authViewModel.logout()
-            // Navigate to login and clear the back stack
-            findNavController().navigate(R.id.action_profile_to_login)
+            viewLifecycleOwner.lifecycleScope.launch {
+                authViewModel.logoutSuspend()
+                findNavController().navigate(R.id.action_profile_to_login)
+            }
         }
     }
 
     // ── Photo picker ─────────────────────────────────────────────────────────
 
     private fun showPhotoPickerDialog() {
+        val hasCustomPhoto = !authViewModel.currentUser.value?.localProfileImageUrl.isNullOrBlank()
+        val options = if (hasCustomPhoto) {
+            arrayOf(
+                getString(R.string.dialog_photo_camera),
+                getString(R.string.dialog_photo_gallery),
+                getString(R.string.dialog_photo_remove)
+            )
+        } else {
+            arrayOf(
+                getString(R.string.dialog_photo_camera),
+                getString(R.string.dialog_photo_gallery)
+            )
+        }
+
         MaterialAlertDialogBuilder(requireContext())
             .setTitle(getString(R.string.dialog_photo_title))
-            .setItems(
-                arrayOf(
-                    getString(R.string.dialog_photo_camera),
-                    getString(R.string.dialog_photo_gallery)
-                )
-            ) { _, which ->
+            .setItems(options) { _, which ->
                 when (which) {
                     0 -> checkCameraPermissionAndOpen()
                     1 -> galleryLauncher.launch("image/*")
+                    2 -> authViewModel.removeProfileImage()
                 }
             }
             .setNegativeButton(getString(R.string.dialog_photo_cancel), null)

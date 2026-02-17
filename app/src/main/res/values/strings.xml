@@ -39,6 +39,7 @@
     <string name="dialog_photo_title">Change Profile Photo</string>
     <string name="dialog_photo_camera">Take Photo</string>
     <string name="dialog_photo_gallery">Choose from Gallery</string>
+    <string name="dialog_photo_remove">Remove Photo</string>
     <string name="dialog_photo_cancel">Cancel</string>
     <string name="uploading_photo">Uploading…</string>
     <string name="msg_photo_uploaded">Profile photo updated!</string>

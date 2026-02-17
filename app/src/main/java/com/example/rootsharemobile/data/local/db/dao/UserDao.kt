@@ -34,6 +34,12 @@ interface UserDao {
     suspend fun getCurrentUser(): UserEntity?
 
     /**
+     * Clear the local profile image URL for the cached user.
+     */
+    @Query("UPDATE users SET localProfileImageUrl = NULL")
+    suspend fun clearLocalProfileImage()
+
+    /**
      * Remove all cached user data (called on logout).
      */
     @Query("DELETE FROM users")
