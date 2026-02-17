@@ -97,6 +97,45 @@ class ProfileFragment : Fragment() {
                 } else {
                     binding.imageProfilePicture.setImageResource(R.color.gray_200)
                 }
+                // Member-since from createdAt (YYYY-MM-DD...)
+                val memberSince = user.createdAt.take(7).replace("-", "/") // e.g. "2025/01"
+                binding.textStatMemberSince.text = memberSince
+
+                // Streak emoji: days since account creation
+                val daysSinceCreation = try {
+                    val created = java.time.LocalDate.parse(user.createdAt.take(10))
+                    java.time.temporal.ChronoUnit.DAYS.between(created, java.time.LocalDate.now())
+                } catch (_: Exception) { 0L }
+                binding.textStatStreakEmoji.text = when {
+                    daysSinceCreation >= 365 -> "\uD83C\uDFC6" // trophy
+                    daysSinceCreation >= 90  -> "\u2B50"        // star
+                    daysSinceCreation >= 30  -> "\uD83D\uDD25"  // fire
+                    else                     -> "\uD83C\uDF31"  // seedling
+                }
+            }
+        }
+
+        // Dashboard: plant count with progression emoji
+        authViewModel.plantCount.observe(viewLifecycleOwner) { count ->
+            binding.textStatPlantsCount.text = count.toString()
+            binding.textStatPlantsEmoji.text = when {
+                count >= 20 -> "\uD83C\uDF33" // deciduous tree (pro)
+                count >= 10 -> "\uD83C\uDF3F" // herb
+                count >= 5  -> "\uD83C\uDF3E" // rice
+                count >= 1  -> "\uD83C\uDF3B" // sunflower
+                else        -> "\uD83C\uDF31" // seedling (beginner)
+            }
+        }
+
+        // Dashboard: post count with social emoji
+        authViewModel.postCount.observe(viewLifecycleOwner) { count ->
+            binding.textStatPostsCount.text = count.toString()
+            binding.textStatPostsEmoji.text = when {
+                count >= 20 -> "\uD83D\uDCE3" // megaphone (influencer)
+                count >= 10 -> "\uD83D\uDCAC" // speech balloon
+                count >= 5  -> "\u270D\uFE0F"  // writing hand
+                count >= 1  -> "\uD83D\uDCDD" // memo
+                else        -> "\uD83D\uDE36" // face without mouth (lurker)
             }
         }
 

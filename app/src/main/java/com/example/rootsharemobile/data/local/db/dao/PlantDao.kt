@@ -33,6 +33,10 @@ interface PlantDao {
     @Query("SELECT * FROM plants ORDER BY createdAt DESC")
     fun observeAllPlants(): LiveData<List<PlantEntity>>
 
+    /** Observe total plant count for the dashboard. */
+    @Query("SELECT COUNT(*) FROM plants")
+    fun observePlantCount(): LiveData<Int>
+
     /**
      * Clear all plants (e.g., on logout or full refresh).
      */
