@@ -31,6 +31,14 @@
     <color name="colorDivider">@color/gray_200</color>
     <color name="colorError">#EF4444</color>
 
+    <!-- Status badge colors -->
+    <color name="badge_active_bg">#DCFCE7</color>
+    <color name="badge_active_text">#166534</color>
+    <color name="badge_dead_bg">#FEE2E2</color>
+    <color name="badge_dead_text">#991B1B</color>
+    <color name="badge_gifted_bg">#FEF3C7</color>
+    <color name="badge_gifted_text">#92400E</color>
+
     <!-- Utility -->
     <color name="white">#FFFFFFFF</color>
     <color name="black">#FF000000</color>

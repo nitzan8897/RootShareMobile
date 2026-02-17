@@ -40,13 +40,46 @@
     <string name="dialog_photo_camera">Take Photo</string>
     <string name="dialog_photo_gallery">Choose from Gallery</string>
     <string name="dialog_photo_cancel">Cancel</string>
+    <string name="dialog_photo_remove">Remove Photo</string>
     <string name="uploading_photo">Uploading…</string>
     <string name="msg_photo_uploaded">Profile photo updated!</string>
     <string name="msg_logout_confirm">Logging out…</string>
 
-    <!-- My Garden screen (placeholder) -->
+    <!-- My Garden screen -->
     <string name="label_my_garden">My Garden</string>
     <string name="placeholder_my_garden">Your plant collection will appear here.</string>
+    <string name="garden_empty_title">Your garden is empty</string>
+    <string name="garden_empty_subtitle">Tap + to add your first plant</string>
+    <string name="fab_add_plant">Add Plant</string>
+
+    <!-- Add / Edit plant bottom sheet -->
+    <string name="title_add_plant">Add Plant</string>
+    <string name="title_edit_plant">Edit Plant</string>
+    <string name="label_plant_name">Plant name</string>
+    <string name="hint_plant_name">e.g. Monstera</string>
+    <string name="label_plant_species">Species</string>
+    <string name="hint_plant_species">e.g. Monstera deliciosa</string>
+    <string name="label_image_url">Image URL (optional)</string>
+    <string name="hint_image_url">https://…</string>
+    <string name="label_status">Health status</string>
+    <string name="btn_add_plant">Add to Garden</string>
+    <string name="btn_save_changes">Save Changes</string>
+
+    <!-- Plant details -->
+    <string name="title_plant_details">Plant Details</string>
+    <string name="label_post_count">%1$d posts</string>
+    <string name="label_no_posts">No posts yet</string>
+    <string name="label_added_on">Added %1$s</string>
+    <string name="btn_delete_plant">Delete Plant</string>
+    <string name="btn_cancel">Cancel</string>
+    <string name="dialog_delete_title">Delete Plant?</string>
+    <string name="dialog_delete_message">This will permanently remove \"%1$s\" from your garden.</string>
+    <string name="btn_confirm_delete">Delete</string>
+
+    <!-- Garden action results -->
+    <string name="msg_plant_added">Plant added to your garden!</string>
+    <string name="msg_plant_updated">Plant updated.</string>
+    <string name="msg_plant_deleted">Plant removed from your garden.</string>
 
     <!-- Community screen (placeholder) -->
     <string name="label_community">Community</string>

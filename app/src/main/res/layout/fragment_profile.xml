@@ -12,7 +12,21 @@
         android:layout_height="wrap_content"
         android:padding="24dp">
 
-        <!-- Screen title -->
+        <!-- Logout icon button — top-left, red -->
+        <ImageButton
+            android:id="@+id/btn_logout"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/ic_logout"
+            android:tint="@null"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/btn_logout"
+            android:scaleType="center"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            android:layout_marginTop="4dp" />
+
+        <!-- Screen title — centred alongside the logout button -->
         <TextView
             android:id="@+id/text_profile_title"
             android:layout_width="0dp"
@@ -21,47 +35,57 @@
             android:textSize="24sp"
             android:textStyle="bold"
             android:textColor="@color/gray_900"
-            app:layout_constraintTop_toTopOf="parent"
+            android:gravity="center"
+            app:layout_constraintTop_toTopOf="@id/btn_logout"
+            app:layout_constraintBottom_toBottomOf="@id/btn_logout"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <!-- Profile picture + pencil edit button overlay -->
+        <FrameLayout
+            android:id="@+id/profile_picture_container"
+            android:layout_width="108dp"
+            android:layout_height="108dp"
+            app:layout_constraintTop_toBottomOf="@id/btn_logout"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            android:layout_marginTop="8dp" />
+            android:layout_marginTop="24dp">
 
-        <!-- Profile picture -->
-        <ImageView
-            android:id="@+id/image_profile_picture"
-            android:layout_width="100dp"
-            android:layout_height="100dp"
-            android:scaleType="centerCrop"
-            android:contentDescription="@string/cd_profile_picture"
-            android:background="@color/gray_200"
-            app:layout_constraintTop_toBottomOf="@id/text_profile_title"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            android:layout_marginTop="24dp" />
+            <ImageView
+                android:id="@+id/image_profile_picture"
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:scaleType="centerCrop"
+                android:contentDescription="@string/cd_profile_picture"
+                android:background="@drawable/bg_profile_placeholder"
+                android:layout_gravity="top|start" />
 
-        <!-- Upload progress -->
+            <!-- Pencil button — bottom-right corner of the profile picture -->
+            <ImageButton
+                android:id="@+id/btn_edit_photo"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:src="@drawable/ic_edit"
+                android:tint="@null"
+                android:background="@drawable/bg_edit_photo_button"
+                android:padding="6dp"
+                android:elevation="4dp"
+                android:contentDescription="@string/btn_change_photo"
+                android:layout_gravity="bottom|end" />
+
+        </FrameLayout>
+
+        <!-- Upload progress (centred over the profile picture area) -->
         <ProgressBar
             android:id="@+id/progress_upload"
             android:layout_width="32dp"
             android:layout_height="32dp"
             android:indeterminateTint="@color/emerald_500"
             android:visibility="gone"
-            app:layout_constraintTop_toTopOf="@id/image_profile_picture"
-            app:layout_constraintBottom_toBottomOf="@id/image_profile_picture"
-            app:layout_constraintStart_toStartOf="@id/image_profile_picture"
-            app:layout_constraintEnd_toEndOf="@id/image_profile_picture" />
-
-        <!-- Change photo button -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btn_change_photo"
-            style="@style/Widget.RootShare.Button.Outlined"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/btn_change_photo"
-            app:layout_constraintTop_toBottomOf="@id/image_profile_picture"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            android:layout_marginTop="12dp" />
+            app:layout_constraintTop_toTopOf="@id/profile_picture_container"
+            app:layout_constraintBottom_toBottomOf="@id/profile_picture_container"
+            app:layout_constraintStart_toStartOf="@id/profile_picture_container"
+            app:layout_constraintEnd_toEndOf="@id/profile_picture_container" />
 
         <!-- Upload status message -->
         <TextView
@@ -72,7 +96,7 @@
             android:textColor="@color/emerald_600"
             android:gravity="center"
             android:visibility="gone"
-            app:layout_constraintTop_toBottomOf="@id/btn_change_photo"
+            app:layout_constraintTop_toBottomOf="@id/profile_picture_container"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             android:layout_marginTop="8dp" />
@@ -150,20 +174,7 @@
             app:layout_constraintTop_toBottomOf="@id/text_email"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            android:layout_marginTop="12dp" />
-
-        <!-- Logout button -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btn_logout"
-            style="@style/Widget.RootShare.Button"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:text="@string/btn_logout"
-            android:backgroundTint="@color/colorError"
-            app:layout_constraintTop_toBottomOf="@id/text_error"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            android:layout_marginTop="32dp"
+            android:layout_marginTop="12dp"
             android:layout_marginBottom="32dp" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
