@@ -10,10 +10,13 @@ import com.example.rootsharemobile.data.auth.GoogleAuthResult
 import com.example.rootsharemobile.data.local.TokenManager
 import com.example.rootsharemobile.data.model.User
 import com.example.rootsharemobile.data.repository.AuthRepository
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import okhttp3.MultipartBody
 
 /**
  * ViewModel for authentication screens (Login & Register).
@@ -37,6 +40,10 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     // Error message
     private val _errorMessage = MutableLiveData<String?>()
     val errorMessage: LiveData<String?> = _errorMessage
+
+    // Profile image upload state
+    private val _uploadState = MutableStateFlow<UploadState>(UploadState.Idle)
+    val uploadState: StateFlow<UploadState> = _uploadState.asStateFlow()
 
     // Field errors for validation
     private val _fieldErrors = MutableLiveData<FieldErrors>(FieldErrors())
@@ -140,6 +147,32 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
             authRepository.logout()
             _uiState.value = AuthUiState.Idle
         }
+    }
+
+    /**
+     * Upload a profile image.
+     */
+    fun uploadProfileImage(imagePart: MultipartBody.Part) {
+        _uploadState.value = UploadState.Loading
+
+        viewModelScope.launch {
+            val result = authRepository.uploadProfileImage(imagePart)
+            result.fold(
+                onSuccess = {
+                    _uploadState.value = UploadState.Success
+                },
+                onFailure = { error ->
+                    _uploadState.value = UploadState.Error(error.message ?: "Upload failed")
+                }
+            )
+        }
+    }
+
+    /**
+     * Reset upload state.
+     */
+    fun resetUploadState() {
+        _uploadState.value = UploadState.Idle
     }
 
     /**
@@ -254,6 +287,16 @@ sealed class AuthUiState {
     data object Loading : AuthUiState()
     data object Success : AuthUiState()
     data class Error(val message: String) : AuthUiState()
+}
+
+/**
+ * UI state for profile image upload.
+ */
+sealed class UploadState {
+    data object Idle : UploadState()
+    data object Loading : UploadState()
+    data object Success : UploadState()
+    data class Error(val message: String) : UploadState()
 }
 
 /**

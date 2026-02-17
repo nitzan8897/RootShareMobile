@@ -167,7 +167,8 @@ fun RootShareNavHost(
                         navController.navigate(NavRoutes.Login.route) {
                             popUpTo(0) { inclusive = true }
                         }
-                    }
+                    },
+                    authViewModel = authViewModel
                 )
             }
         }
