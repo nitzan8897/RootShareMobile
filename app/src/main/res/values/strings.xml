@@ -49,6 +49,11 @@
     <string name="msg_profile_updated">Profile updated!</string>
     <string name="cd_logout">Logout</string>
 
+    <!-- Profile dashboard -->
+    <string name="stat_plants">Plants</string>
+    <string name="stat_posts">Posts</string>
+    <string name="stat_member">Member</string>
+
     <!-- My Garden screen (placeholder) -->
     <string name="label_my_garden">My Garden</string>
     <string name="placeholder_my_garden">Your plant collection will appear here.</string>
