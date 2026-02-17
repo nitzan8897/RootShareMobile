@@ -53,7 +53,7 @@
 
         <!-- Change photo button -->
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/btn_change_photo"
+            android:id="@+id/btn_edit_photo"
             style="@style/Widget.RootShare.Button.Outlined"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -72,7 +72,7 @@
             android:textColor="@color/emerald_600"
             android:gravity="center"
             android:visibility="gone"
-            app:layout_constraintTop_toBottomOf="@id/btn_change_photo"
+            app:layout_constraintTop_toBottomOf="@id/btn_edit_photo"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             android:layout_marginTop="8dp" />
