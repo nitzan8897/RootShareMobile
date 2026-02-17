@@ -1,7 +1,10 @@
 package com.example.rootsharemobile.data.repository
 
 import android.util.Log
+import androidx.lifecycle.LiveData
 import com.example.rootsharemobile.data.local.TokenManager
+import com.example.rootsharemobile.data.local.db.dao.UserDao
+import com.example.rootsharemobile.data.local.db.entity.UserEntity
 import com.example.rootsharemobile.data.model.AuthResponse
 import com.example.rootsharemobile.data.model.GoogleTokenRequest
 import com.example.rootsharemobile.data.model.LoginRequest
@@ -13,128 +16,132 @@ import okhttp3.MultipartBody
 
 /**
  * Repository for authentication operations.
+ *
+ * After every successful network call that returns a [User], the result is
+ * persisted in both [TokenManager] (JWT tokens + lightweight user cache) and
+ * [UserDao] (the Room Single Source of Truth for the UI layer).
  */
-class AuthRepository(private val tokenManager: TokenManager) {
+class AuthRepository(
+    private val tokenManager: TokenManager,
+    private val userDao: UserDao
+) {
 
     private val apiService = RetrofitClient.apiService
 
-    /**
-     * Register a new user.
-     */
-    suspend fun register(
-        email: String,
-        username: String,
-        password: String
-    ): Result<AuthResponse> {
+    // -------------------------------------------------------------------------
+    // Room LiveData — observed by ViewModels.
+    // -------------------------------------------------------------------------
+
+    /** Emits the cached user whenever it changes in Room. */
+    fun observeCurrentUser(): LiveData<UserEntity?> =
+        userDao.observeCurrentUser()
+
+    /** Reactive login state backed by DataStore. */
+    val isLoggedIn: Flow<Boolean> = tokenManager.isLoggedIn
+
+    // -------------------------------------------------------------------------
+    // Authentication operations.
+    // -------------------------------------------------------------------------
+
+    /** Register a new account. */
+    suspend fun register(email: String, username: String, password: String): Result<AuthResponse> {
         return try {
-            val request = RegisterRequest(
-                email = email.trim(),
-                username = username.trim(),
-                password = password
-            )
+            val request = RegisterRequest(email = email.trim(), username = username.trim(), password = password)
             val response = apiService.register(request)
 
             if (response.isSuccessful && response.body() != null) {
                 val authResponse = response.body()!!
-                // Save tokens and user to DataStore
                 tokenManager.saveAuth(authResponse.user, authResponse.tokens)
+                userDao.insertUser(authResponse.user.toEntity())
                 Result.success(authResponse)
             } else {
-                val errorMessage = when (response.code()) {
-                    409 -> "An account with this email or username already exists"
-                    400 -> "Please check your input and try again"
+                val message = when (response.code()) {
+                    409  -> "An account with this email or username already exists."
+                    400  -> "Please check your input and try again."
                     else -> "Registration failed: ${response.message()}"
                 }
-                Result.failure(Exception(errorMessage))
+                Result.failure(Exception(message))
             }
         } catch (e: Exception) {
             Result.failure(Exception("Network error: ${e.message}"))
         }
     }
 
-    /**
-     * Login with email and password.
-     */
+    /** Login with email and password. */
     suspend fun login(email: String, password: String): Result<AuthResponse> {
         return try {
-            val request = LoginRequest(
-                email = email.trim(),
-                password = password
-            )
+            val request = LoginRequest(email = email.trim(), password = password)
             val response = apiService.login(request)
 
             if (response.isSuccessful && response.body() != null) {
                 val authResponse = response.body()!!
-                // Save tokens and user to DataStore
                 tokenManager.saveAuth(authResponse.user, authResponse.tokens)
+                userDao.insertUser(authResponse.user.toEntity())
                 Result.success(authResponse)
             } else {
-                val errorMessage = when (response.code()) {
-                    401 -> "Invalid email or password"
-                    400 -> "Please check your input and try again"
+                val message = when (response.code()) {
+                    401  -> "Invalid email or password."
+                    400  -> "Please check your input and try again."
                     else -> "Login failed: ${response.message()}"
                 }
-                Result.failure(Exception(errorMessage))
+                Result.failure(Exception(message))
             }
         } catch (e: Exception) {
             Result.failure(Exception("Network error: ${e.message}"))
         }
     }
 
-    /**
-     * Sign in or register with Google ID token.
-     */
+    /** Authenticate with a Google ID token. */
     suspend fun googleAuth(idToken: String): Result<AuthResponse> {
         return try {
-            Log.d("AuthRepo", "TEST GOOGLE AUTH, idToken: $idToken")
+            Log.d("AuthRepository", "Starting Google auth with idToken.")
             val request = GoogleTokenRequest(idToken = idToken)
             val response = apiService.googleAuth(request)
 
             if (response.isSuccessful && response.body() != null) {
                 val authResponse = response.body()!!
-                // Save tokens and user to DataStore
                 tokenManager.saveAuth(authResponse.user, authResponse.tokens)
+                userDao.insertUser(authResponse.user.toEntity())
                 Result.success(authResponse)
             } else {
-                val errorMessage = when (response.code()) {
-                    401 -> "Invalid Google token"
-                    400 -> "Google authentication failed"
+                val message = when (response.code()) {
+                    401  -> "Invalid Google token."
+                    400  -> "Google authentication failed."
                     else -> "Google sign-in failed: ${response.message()}"
                 }
-                Result.failure(Exception(errorMessage))
+                Result.failure(Exception(message))
             }
         } catch (e: Exception) {
             Result.failure(Exception("Network error: ${e.message}"))
         }
     }
 
-    /**
-     * Refresh access token.
-     */
+    /** Refresh the access token silently. */
     suspend fun refreshToken(): Result<Boolean> {
         return try {
             val refreshToken = tokenManager.getRefreshToken()
-                ?: return Result.failure(Exception("No refresh token"))
+                ?: return Result.failure(Exception("No refresh token found."))
 
             val response = apiService.refreshToken("Bearer $refreshToken")
-
             if (response.isSuccessful && response.body() != null) {
                 val tokens = response.body()!!
                 tokenManager.updateTokens(tokens.accessToken, tokens.refreshToken)
                 Result.success(true)
             } else {
-                // Token refresh failed, clear auth
                 tokenManager.clearAuth()
-                Result.failure(Exception("Token refresh failed"))
+                userDao.deleteAllUsers()
+                Result.failure(Exception("Session expired. Please log in again."))
             }
         } catch (e: Exception) {
             tokenManager.clearAuth()
+            userDao.deleteAllUsers()
             Result.failure(e)
         }
     }
 
     /**
-     * Logout and clear auth data.
+     * Logout: call the API, then wipe tokens and the local Room cache.
+     * Always succeeds from the UI's perspective so the user is never stuck.
      */
     suspend fun logout(): Result<Boolean> {
         return try {
@@ -142,67 +149,47 @@ class AuthRepository(private val tokenManager: TokenManager) {
             if (accessToken != null) {
                 apiService.logout("Bearer $accessToken")
             }
+        } catch (_: Exception) {
+            // Ignore network failures — we clear local state regardless.
+        } finally {
             tokenManager.clearAuth()
-            Result.success(true)
-        } catch (e: Exception) {
-            // Clear auth even if API call fails
-            tokenManager.clearAuth()
-            Result.success(true)
-        }
+            userDao.deleteAllUsers()
+        }.let { Result.success(true) }
     }
 
     /**
-     * Get current user from API.
+     * Fetch the current user from the API, update DataStore, and sync Room.
      */
     suspend fun getCurrentUser(): Result<User> {
         return try {
             val accessToken = tokenManager.getAccessToken()
-                ?: return Result.failure(Exception("Not authenticated"))
+                ?: return Result.failure(Exception("Not authenticated."))
 
             val response = apiService.getCurrentUser("Bearer $accessToken")
-
             if (response.isSuccessful && response.body() != null) {
                 val user = response.body()!!
                 tokenManager.saveUser(user)
+                userDao.insertUser(user.toEntity())
                 Result.success(user)
-            } else if (response.code() == 401) {
-                // Try to refresh token
-                val refreshResult = refreshToken()
-                if (refreshResult.isSuccess) {
-                    // Retry with new token
-                    val newToken = tokenManager.getAccessToken()!!
-                    val retryResponse = apiService.getCurrentUser("Bearer $newToken")
-                    if (retryResponse.isSuccessful && retryResponse.body() != null) {
-                        val user = retryResponse.body()!!
-                        tokenManager.saveUser(user)
-                        Result.success(user)
-                    } else {
-                        Result.failure(Exception("Failed to get user"))
-                    }
-                } else {
-                    Result.failure(Exception("Session expired. Please login again."))
-                }
             } else {
-                Result.failure(Exception("Failed to get user: ${response.message()}"))
+                Result.failure(Exception("Failed to load user profile."))
             }
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 
-    /**
-     * Upload a profile image.
-     */
+    /** Upload a profile picture, then update both DataStore and Room. */
     suspend fun uploadProfileImage(imagePart: MultipartBody.Part): Result<User> {
         return try {
             val accessToken = tokenManager.getAccessToken()
-                ?: return Result.failure(Exception("Not authenticated"))
+                ?: return Result.failure(Exception("Not authenticated."))
 
             val response = apiService.uploadProfileImage("Bearer $accessToken", imagePart)
-
             if (response.isSuccessful && response.body() != null) {
                 val user = response.body()!!
                 tokenManager.saveUser(user)
+                userDao.insertUser(user.toEntity())
                 Result.success(user)
             } else {
                 Result.failure(Exception("Failed to upload image: ${response.message()}"))
@@ -212,18 +199,22 @@ class AuthRepository(private val tokenManager: TokenManager) {
         }
     }
 
-    /**
-     * Get access token for authenticated requests.
-     */
+    /** Convenience accessor for the current access token. */
     suspend fun getAccessToken(): String? = tokenManager.getAccessToken()
 
-    /**
-     * Check if user is logged in.
-     */
-    val isLoggedIn: Flow<Boolean> = tokenManager.isLoggedIn
+    // -------------------------------------------------------------------------
+    // Mapper helper
+    // -------------------------------------------------------------------------
 
-    /**
-     * Get cached user data.
-     */
-    val user: Flow<User?> = tokenManager.user
+    private fun User.toEntity() = UserEntity(
+        id = this.id,
+        email = this.email,
+        username = this.username,
+        profileImageUrl = this.profileImageUrl,
+        localProfileImageUrl = this.localProfileImageUrl,
+        role = this.role.name,
+        authProvider = this.authProvider.name,
+        createdAt = this.createdAt,
+        updatedAt = this.updatedAt
+    )
 }

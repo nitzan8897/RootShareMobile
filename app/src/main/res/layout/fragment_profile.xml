@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:background="@color/colorBackground">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="24dp">
+
+        <!-- Screen title -->
+        <TextView
+            android:id="@+id/text_profile_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="@string/label_profile"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="@color/gray_900"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginTop="8dp" />
+
+        <!-- Profile picture -->
+        <ImageView
+            android:id="@+id/image_profile_picture"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:scaleType="centerCrop"
+            android:contentDescription="@string/cd_profile_picture"
+            android:background="@color/gray_200"
+            app:layout_constraintTop_toBottomOf="@id/text_profile_title"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginTop="24dp" />
+
+        <!-- Upload progress -->
+        <ProgressBar
+            android:id="@+id/progress_upload"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:indeterminateTint="@color/emerald_500"
+            android:visibility="gone"
+            app:layout_constraintTop_toTopOf="@id/image_profile_picture"
+            app:layout_constraintBottom_toBottomOf="@id/image_profile_picture"
+            app:layout_constraintStart_toStartOf="@id/image_profile_picture"
+            app:layout_constraintEnd_toEndOf="@id/image_profile_picture" />
+
+        <!-- Change photo button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_change_photo"
+            style="@style/Widget.RootShare.Button.Outlined"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/btn_change_photo"
+            app:layout_constraintTop_toBottomOf="@id/image_profile_picture"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginTop="12dp" />
+
+        <!-- Upload status message -->
+        <TextView
+            android:id="@+id/text_upload_status"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:textSize="13sp"
+            android:textColor="@color/emerald_600"
+            android:gravity="center"
+            android:visibility="gone"
+            app:layout_constraintTop_toBottomOf="@id/btn_change_photo"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginTop="8dp" />
+
+        <!-- Divider -->
+        <View
+            android:id="@+id/divider_profile"
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:background="@color/colorDivider"
+            app:layout_constraintTop_toBottomOf="@id/text_upload_status"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginTop="20dp" />
+
+        <!-- Username label -->
+        <TextView
+            android:id="@+id/label_username"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="@string/label_username_display"
+            android:textSize="12sp"
+            android:textColor="@color/gray_500"
+            android:textAllCaps="true"
+            android:letterSpacing="0.08"
+            app:layout_constraintTop_toBottomOf="@id/divider_profile"
+            app:layout_constraintStart_toStartOf="parent"
+            android:layout_marginTop="20dp" />
+
+        <TextView
+            android:id="@+id/text_username"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:textSize="16sp"
+            android:textColor="@color/gray_900"
+            android:textStyle="bold"
+            app:layout_constraintTop_toBottomOf="@id/label_username"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginTop="4dp" />
+
+        <!-- Email label -->
+        <TextView
+            android:id="@+id/label_email"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="@string/label_email_display"
+            android:textSize="12sp"
+            android:textColor="@color/gray_500"
+            android:textAllCaps="true"
+            android:letterSpacing="0.08"
+            app:layout_constraintTop_toBottomOf="@id/text_username"
+            app:layout_constraintStart_toStartOf="parent"
+            android:layout_marginTop="16dp" />
+
+        <TextView
+            android:id="@+id/text_email"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:textSize="16sp"
+            android:textColor="@color/gray_900"
+            app:layout_constraintTop_toBottomOf="@id/label_email"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginTop="4dp" />
+
+        <!-- Error message -->
+        <TextView
+            android:id="@+id/text_error"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:textColor="@color/colorError"
+            android:textSize="13sp"
+            android:visibility="gone"
+            app:layout_constraintTop_toBottomOf="@id/text_email"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginTop="12dp" />
+
+        <!-- Logout button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_logout"
+            style="@style/Widget.RootShare.Button"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="@string/btn_logout"
+            android:backgroundTint="@color/colorError"
+            app:layout_constraintTop_toBottomOf="@id/text_error"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginTop="32dp"
+            android:layout_marginBottom="32dp" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</ScrollView>
