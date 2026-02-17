@@ -144,21 +144,28 @@ class AuthRepository(
      * Always succeeds from the UI's perspective so the user is never stuck.
      */
     suspend fun logout(): Result<Boolean> {
-        return try {
+        // Use try-catch-finally as a statement (not expression) so that
+        // cleanup always runs, and we return success unconditionally.
+        try {
             val accessToken = tokenManager.getAccessToken()
             if (accessToken != null) {
                 apiService.logout("Bearer $accessToken")
             }
         } catch (_: Exception) {
-            // Ignore network failures — we clear local state regardless.
+            // Ignore network failures — local state is cleared in finally.
         } finally {
             tokenManager.clearAuth()
             userDao.deleteAllUsers()
-        }.let { Result.success(true) }
+        }
+        return Result.success(true)
     }
 
     /**
      * Fetch the current user from the API, update DataStore, and sync Room.
+     *
+     * Uses a merge strategy: if the API response omits image URL fields (e.g.
+     * the /auth/me endpoint returns only JWT-payload fields), we preserve
+     * whatever image URLs are already stored in Room so Glide can still load them.
      */
     suspend fun getCurrentUser(): Result<User> {
         return try {
@@ -168,8 +175,17 @@ class AuthRepository(
             val response = apiService.getCurrentUser("Bearer $accessToken")
             if (response.isSuccessful && response.body() != null) {
                 val user = response.body()!!
-                tokenManager.saveUser(user)
-                userDao.insertUser(user.toEntity())
+                val existing = userDao.getCurrentUser()
+
+                // Merge: keep existing image URLs when the API returns null for them
+                val merged = user.toEntity().copy(
+                    id = user.id.ifBlank { existing?.id ?: user.id },
+                    profileImageUrl = user.profileImageUrl?.takeIf { it.isNotBlank() }
+                        ?: existing?.profileImageUrl,
+                    localProfileImageUrl = user.localProfileImageUrl?.takeIf { it.isNotBlank() }
+                        ?: existing?.localProfileImageUrl
+                )
+                userDao.insertUser(merged)
                 Result.success(user)
             } else {
                 Result.failure(Exception("Failed to load user profile."))
@@ -197,6 +213,15 @@ class AuthRepository(
         } catch (e: Exception) {
             Result.failure(Exception("Network error: ${e.message}"))
         }
+    }
+
+    /**
+     * Clear the locally-stored custom profile image URL so Room falls back to
+     * the server-provided URL (e.g. the original Google profile photo).
+     */
+    suspend fun removeLocalProfileImage() {
+        val current = userDao.getCurrentUser() ?: return
+        userDao.insertUser(current.copy(localProfileImageUrl = null))
     }
 
     /** Convenience accessor for the current access token. */
