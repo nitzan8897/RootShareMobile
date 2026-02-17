@@ -44,6 +44,10 @@
     <string name="uploading_photo">Uploading…</string>
     <string name="msg_photo_uploaded">Profile photo updated!</string>
     <string name="msg_logout_confirm">Logging out…</string>
+    <string name="btn_edit_profile">Edit Profile</string>
+    <string name="btn_save_profile">Save</string>
+    <string name="msg_profile_updated">Profile updated!</string>
+    <string name="cd_logout">Logout</string>
 
     <!-- My Garden screen (placeholder) -->
     <string name="label_my_garden">My Garden</string>
