@@ -43,6 +43,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:hint="@string/label_username"
+            app:placeholderText="@string/hint_username"
             app:layout_constraintTop_toBottomOf="@id/text_subtitle"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
@@ -53,8 +54,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="text"
-                android:imeOptions="actionNext"
-                android:hint="@string/hint_username" />
+                android:imeOptions="actionNext" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <!-- Email field -->
@@ -64,6 +64,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:hint="@string/label_email"
+            app:placeholderText="@string/hint_email"
             app:layout_constraintTop_toBottomOf="@id/layout_username"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
@@ -74,8 +75,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="textEmailAddress"
-                android:imeOptions="actionNext"
-                android:hint="@string/hint_email" />
+                android:imeOptions="actionNext" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <!-- Password field -->
@@ -85,6 +85,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:hint="@string/label_password"
+            app:placeholderText="@string/hint_password"
             app:passwordToggleEnabled="true"
             app:layout_constraintTop_toBottomOf="@id/layout_email"
             app:layout_constraintStart_toStartOf="parent"
@@ -96,8 +97,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="textPassword"
-                android:imeOptions="actionNext"
-                android:hint="@string/hint_password" />
+                android:imeOptions="actionNext" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <!-- Confirm password field -->
@@ -107,6 +107,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:hint="@string/label_confirm_password"
+            app:placeholderText="@string/hint_confirm_password"
             app:passwordToggleEnabled="true"
             app:layout_constraintTop_toBottomOf="@id/layout_password"
             app:layout_constraintStart_toStartOf="parent"
@@ -118,8 +119,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="textPassword"
-                android:imeOptions="actionDone"
-                android:hint="@string/hint_confirm_password" />
+                android:imeOptions="actionDone" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <!-- Global error message -->
