@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Selector that colours a bottom-nav icon/label emerald when selected. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:color="@color/emerald_500" android:state_checked="true" />
+    <item android:color="@color/gray_400" />
+</selector>
