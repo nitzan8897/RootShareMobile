@@ -68,8 +68,9 @@
     <string name="hint_plant_name">e.g. Monstera</string>
     <string name="label_plant_species">Species</string>
     <string name="hint_plant_species">e.g. Monstera deliciosa</string>
-    <string name="label_image_url">Image URL (optional)</string>
+    <string name="label_image_url">Image URL</string>
     <string name="hint_image_url">https://…</string>
+    <string name="hint_image_url_optional">Leave empty for a random plant image</string>
     <string name="label_status">Health status</string>
     <string name="btn_add_plant">Add to Garden</string>
     <string name="btn_save_changes">Save Changes</string>
@@ -105,6 +106,7 @@
     <string name="error_server">Server error. Please try again later.</string>
     <string name="error_unknown">Something went wrong. Please try again.</string>
     <string name="error_field_required">This field is required.</string>
+    <string name="error_not_authenticated">Session expired. Please log in again.</string>
 
     <!-- Feed post counters -->
     <string name="label_likes_count">%1$d likes</string>

@@ -6,10 +6,12 @@ import com.example.rootsharemobile.data.local.db.entity.PlantEntity
 import com.example.rootsharemobile.data.local.db.entity.PlantWithPostCount
 import com.example.rootsharemobile.data.model.CreatePlantRequest
 import com.example.rootsharemobile.data.model.Plant
+import com.example.rootsharemobile.data.model.Species
 import com.example.rootsharemobile.data.model.UpdatePlantRequest
 import com.example.rootsharemobile.data.remote.RetrofitClient
 import com.example.rootsharemobile.data.remote.mapHttpError
 import com.example.rootsharemobile.data.remote.mapNetworkError
+import com.example.rootsharemobile.data.remote.parseErrorBody
 
 class PlantRepository(private val plantDao: PlantDao) {
 
@@ -25,11 +27,28 @@ class PlantRepository(private val plantDao: PlantDao) {
     fun observeAllPlants(): LiveData<List<PlantEntity>> =
         plantDao.observeAllPlants()
 
-    fun observeGardenPlantsWithPostCount(): LiveData<List<PlantWithPostCount>> =
-        plantDao.observeGardenPlantsWithPostCount()
+    fun observeGardenPlantsWithPostCount(userId: String): LiveData<List<PlantWithPostCount>> =
+        plantDao.observeGardenPlantsWithPostCount(userId)
 
     fun observePlantWithPostCount(plantId: String): LiveData<PlantWithPostCount?> =
         plantDao.observePlantWithPostCount(plantId)
+
+    // -------------------------------------------------------------------------
+    // Species
+    // -------------------------------------------------------------------------
+
+    suspend fun fetchSpecies(token: String): Result<List<Species>> {
+        return try {
+            val response = apiService.getSpecies("Bearer $token")
+            if (response.isSuccessful) {
+                Result.success(response.body() ?: emptyList())
+            } else {
+                Result.failure(Exception(mapHttpError(response.code(), "species")))
+            }
+        } catch (e: Exception) {
+            Result.failure(Exception(mapNetworkError(e)))
+        }
+    }
 
     // -------------------------------------------------------------------------
     // Network + cache operations
@@ -56,6 +75,7 @@ class PlantRepository(private val plantDao: PlantDao) {
             val response = apiService.getPlants("Bearer $token")
             if (response.isSuccessful) {
                 val plants = response.body() ?: emptyList()
+                plantDao.deleteNonFeaturedPlants()
                 plantDao.insertPlants(plants.map { it.toEntity(isFeatured = false) })
                 Result.success(Unit)
             } else {
@@ -74,7 +94,8 @@ class PlantRepository(private val plantDao: PlantDao) {
                 plantDao.insertPlants(listOf(plant.toEntity(isFeatured = false)))
                 Result.success(plant)
             } else {
-                Result.failure(Exception(mapHttpError(response.code(), "plant")))
+                val msg = parseErrorBody(response.errorBody()) ?: mapHttpError(response.code(), "plant")
+                Result.failure(Exception(msg))
             }
         } catch (e: Exception) {
             Result.failure(Exception(mapNetworkError(e)))
@@ -90,7 +111,8 @@ class PlantRepository(private val plantDao: PlantDao) {
                 plantDao.insertPlants(listOf(plant.toEntity(isFeatured = existing?.isFeatured ?: false)))
                 Result.success(plant)
             } else {
-                Result.failure(Exception(mapHttpError(response.code(), "plant")))
+                val msg = parseErrorBody(response.errorBody()) ?: mapHttpError(response.code(), "plant")
+                Result.failure(Exception(msg))
             }
         } catch (e: Exception) {
             Result.failure(Exception(mapNetworkError(e)))

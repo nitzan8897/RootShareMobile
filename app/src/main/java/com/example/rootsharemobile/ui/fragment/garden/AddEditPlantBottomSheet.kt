@@ -4,7 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.activity.viewModels
+import android.widget.ArrayAdapter
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import com.example.rootsharemobile.R
@@ -16,16 +16,6 @@ import com.example.rootsharemobile.ui.viewmodel.MyGardenViewModel
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import kotlinx.coroutines.launch
 
-/**
- * BottomSheetDialogFragment for creating a new plant or editing an existing one.
- *
- * Mode is determined by the presence of [EXTRA_PLANT_ID] in arguments:
- *  - No ID  → Add mode (single-shot creation)
- *  - With ID → Edit mode (pre-filled fields + status selector)
- *
- * Communicates with [MyGardenViewModel] scoped to the Activity so that
- * [MyGardenFragment] observes Room LiveData updates automatically.
- */
 class AddEditPlantBottomSheet : BottomSheetDialogFragment() {
 
     private var _binding: BottomSheetAddEditPlantBinding? = null
@@ -36,6 +26,8 @@ class AddEditPlantBottomSheet : BottomSheetDialogFragment() {
 
     private val plantId: String? get() = arguments?.getString(EXTRA_PLANT_ID)
     private val isEditMode: Boolean get() = plantId != null
+
+    private var submitted = false
 
     companion object {
         private const val EXTRA_PLANT_ID  = "plantId"
@@ -67,6 +59,7 @@ class AddEditPlantBottomSheet : BottomSheetDialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setupUi()
+        setupSpeciesDropdown()
         observeViewModel()
     }
 
@@ -75,12 +68,10 @@ class AddEditPlantBottomSheet : BottomSheetDialogFragment() {
             binding.textSheetTitle.setText(R.string.title_edit_plant)
             binding.btnSubmit.setText(R.string.btn_save_changes)
 
-            // Pre-fill fields
             binding.editName.setText(arguments?.getString(EXTRA_NAME))
-            binding.editSpecies.setText(arguments?.getString(EXTRA_SPECIES))
+            binding.editSpecies.setText(arguments?.getString(EXTRA_SPECIES), false)
             binding.editImageUrl.setText(arguments?.getString(EXTRA_IMAGE_URL))
 
-            // Show status selector
             binding.labelStatus.visibility = View.VISIBLE
             binding.radioStatus.visibility = View.VISIBLE
             when (arguments?.getString(EXTRA_STATUS)?.uppercase()) {
@@ -93,18 +84,34 @@ class AddEditPlantBottomSheet : BottomSheetDialogFragment() {
         binding.btnSubmit.setOnClickListener { submit() }
     }
 
+    private fun setupSpeciesDropdown() {
+        gardenViewModel.speciesList.observe(viewLifecycleOwner) { species ->
+            val names = species.map { it.name }
+            val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, names)
+            binding.editSpecies.setAdapter(adapter)
+        }
+
+        // Trigger fetch if not loaded yet
+        lifecycleScope.launch {
+            val token = authViewModel.getAccessToken() ?: return@launch
+            gardenViewModel.fetchSpecies(token)
+        }
+    }
+
     private fun observeViewModel() {
-        gardenViewModel.uiState.observe(viewLifecycleOwner) { state ->
-            val loading = state is MyGardenViewModel.GardenUiState.Loading
+        gardenViewModel.resetOperationState()
+        gardenViewModel.operationState.observe(viewLifecycleOwner) { state ->
+            val loading = state is MyGardenViewModel.OperationState.Loading
             binding.progressSubmit.visibility = if (loading) View.VISIBLE else View.GONE
             binding.btnSubmit.isEnabled = !loading
 
-            if (state is MyGardenViewModel.GardenUiState.Error) {
+            if (state is MyGardenViewModel.OperationState.Error) {
                 binding.textError.text = state.message
                 binding.textError.visibility = View.VISIBLE
             }
 
-            if (state is MyGardenViewModel.GardenUiState.Success) {
+            if (state is MyGardenViewModel.OperationState.Success && submitted) {
+                submitted = false
                 dismiss()
             }
         }
@@ -127,18 +134,27 @@ class AddEditPlantBottomSheet : BottomSheetDialogFragment() {
         }
         binding.layoutSpecies.error = null
         binding.textError.visibility = View.GONE
+        submitted = true
+
+        val finalImageUrl = imageUrl.ifBlank { MyGardenViewModel.randomDefaultImage() }
 
         lifecycleScope.launch {
-            val token = authViewModel.getAccessToken() ?: return@launch
+            val token = authViewModel.getAccessToken()
+            if (token == null) {
+                binding.textError.text = getString(R.string.error_not_authenticated)
+                binding.textError.visibility = View.VISIBLE
+                submitted = false
+                return@launch
+            }
             if (isEditMode) {
                 val status = when {
                     binding.radioDead.isChecked   -> PlantStatus.DEAD
                     binding.radioGifted.isChecked -> PlantStatus.GIFTED
                     else                          -> PlantStatus.ACTIVE
                 }
-                gardenViewModel.updatePlant(token, plantId!!, name, species, imageUrl, status)
+                gardenViewModel.updatePlant(token, plantId!!, name, species, finalImageUrl, status)
             } else {
-                gardenViewModel.createPlant(token, name, species, imageUrl)
+                gardenViewModel.createPlant(token, name, species, finalImageUrl)
             }
         }
     }

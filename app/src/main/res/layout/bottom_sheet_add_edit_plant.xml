@@ -45,25 +45,24 @@
             android:imeOptions="actionNext" />
     </com.google.android.material.textfield.TextInputLayout>
 
-    <!-- Species -->
+    <!-- Species (dropdown) -->
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/layout_species"
-        style="@style/Widget.RootShare.TextInputLayout"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="@string/label_plant_species"
-        app:placeholderText="@string/hint_plant_species"
         android:layout_marginBottom="12dp">
 
-        <com.google.android.material.textfield.TextInputEditText
+        <AutoCompleteTextView
             android:id="@+id/edit_species"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="textCapWords"
+            android:inputType="none"
             android:imeOptions="actionNext" />
     </com.google.android.material.textfield.TextInputLayout>
 
-    <!-- Image URL -->
+    <!-- Image URL (optional) -->
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/layout_image_url"
         style="@style/Widget.RootShare.TextInputLayout"
@@ -71,6 +70,8 @@
         android:layout_height="wrap_content"
         android:hint="@string/label_image_url"
         app:placeholderText="@string/hint_image_url"
+        app:helperText="@string/hint_image_url_optional"
+        app:helperTextEnabled="true"
         android:layout_marginBottom="12dp">
 
         <com.google.android.material.textfield.TextInputEditText
