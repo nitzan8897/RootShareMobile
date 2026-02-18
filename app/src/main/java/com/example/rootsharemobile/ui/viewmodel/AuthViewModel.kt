@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.asLiveData
+import androidx.lifecycle.switchMap
 import androidx.lifecycle.viewModelScope
 import com.example.rootsharemobile.data.auth.GoogleAuthHelper
 import com.example.rootsharemobile.data.auth.GoogleAuthResult
@@ -30,7 +31,10 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     private val authRepository = AuthRepository(tokenManager, database.userDao())
 
     /** Dashboard stats from Room — reactive counts for profile mini-dashboard. */
-    val plantCount: LiveData<Int> = database.plantDao().observePlantCount()
+    val plantCount: LiveData<Int> = authRepository.observeCurrentUser().switchMap { user ->
+        val userId = user?.id ?: ""
+        database.plantDao().observePlantCount(userId)
+    }
     val postCount: LiveData<Int> = database.postDao().observePostCount()
 
     // -------------------------------------------------------------------------

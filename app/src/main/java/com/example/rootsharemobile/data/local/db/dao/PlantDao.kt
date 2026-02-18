@@ -24,14 +24,15 @@ interface PlantDao {
     fun observeAllPlants(): LiveData<List<PlantEntity>>
 
     /**
-     * Garden list with live post-count per plant (correlated subquery).
+     * Garden list with live post-count per plant, filtered to a specific user.
      */
     @Query("""
         SELECT p.*, (SELECT COUNT(*) FROM posts WHERE plantId = p.id) AS postCount
         FROM plants p
+        WHERE p.userId = :userId
         ORDER BY p.createdAt DESC
     """)
-    fun observeGardenPlantsWithPostCount(): LiveData<List<PlantWithPostCount>>
+    fun observeGardenPlantsWithPostCount(userId: String): LiveData<List<PlantWithPostCount>>
 
     /**
      * Single plant observation for the details screen.
@@ -44,9 +45,9 @@ interface PlantDao {
     """)
     fun observePlantWithPostCount(plantId: String): LiveData<PlantWithPostCount?>
 
-    /** Observe total plant count for the dashboard. */
-    @Query("SELECT COUNT(*) FROM plants")
-    fun observePlantCount(): LiveData<Int>
+    /** Observe total plant count for the dashboard, scoped to a user. */
+    @Query("SELECT COUNT(*) FROM plants WHERE userId = :userId")
+    fun observePlantCount(userId: String): LiveData<Int>
 
     @Query("SELECT * FROM plants WHERE id = :id LIMIT 1")
     suspend fun getPlantById(id: String): PlantEntity?
@@ -56,6 +57,10 @@ interface PlantDao {
 
     @Query("DELETE FROM plants")
     suspend fun deleteAllPlants()
+
+    /** Remove all non-featured plants so stale rows from other users are evicted. */
+    @Query("DELETE FROM plants WHERE isFeatured = 0")
+    suspend fun deleteNonFeaturedPlants()
 
     @Query("UPDATE plants SET isFeatured = 0")
     suspend fun clearFeaturedFlag()

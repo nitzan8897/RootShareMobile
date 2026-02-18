@@ -88,8 +88,8 @@ class PlantDetailsFragment : Fragment() {
     }
 
     private fun observeActions() {
-        gardenViewModel.uiState.observe(viewLifecycleOwner) { state ->
-            val loading = state is MyGardenViewModel.GardenUiState.Loading
+        gardenViewModel.operationState.observe(viewLifecycleOwner) { state ->
+            val loading = state is MyGardenViewModel.OperationState.Loading
             binding.progress.visibility = if (loading) View.VISIBLE else View.GONE
             binding.btnDelete.isEnabled = !loading
         }
@@ -160,7 +160,8 @@ class PlantDetailsFragment : Fragment() {
                 lifecycleScope.launch {
                     val token = authViewModel.getAccessToken() ?: return@launch
                     gardenViewModel.deletePlant(token, item.plant.id)
-                    findNavController().navigateUp()
+                    // Navigation is handled by observePlant() — when the plant is
+                    // deleted from Room, the observer receives null and navigates back.
                 }
             }
             .show()
