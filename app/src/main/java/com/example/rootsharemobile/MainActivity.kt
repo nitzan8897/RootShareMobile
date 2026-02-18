@@ -30,6 +30,7 @@ class MainActivity : AppCompatActivity() {
     private val mainDestinations = setOf(
         R.id.homeFragment,
         R.id.myGardenFragment,
+        R.id.myPostsFragment,
         R.id.communityFragment,
         R.id.profileFragment
     )
