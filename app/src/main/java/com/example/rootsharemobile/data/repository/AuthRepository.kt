@@ -3,6 +3,7 @@ package com.example.rootsharemobile.data.repository
 import android.util.Log
 import androidx.lifecycle.LiveData
 import com.example.rootsharemobile.data.local.TokenManager
+import com.example.rootsharemobile.data.local.db.dao.PlantDao
 import com.example.rootsharemobile.data.local.db.dao.UserDao
 import com.example.rootsharemobile.data.local.db.entity.UserEntity
 import com.example.rootsharemobile.data.model.AuthResponse
@@ -23,7 +24,8 @@ import okhttp3.MultipartBody
  */
 class AuthRepository(
     private val tokenManager: TokenManager,
-    private val userDao: UserDao
+    private val userDao: UserDao,
+    private val plantDao: PlantDao? = null
 ) {
 
     private val apiService = RetrofitClient.apiService
@@ -154,6 +156,7 @@ class AuthRepository(
         } finally {
             tokenManager.clearAuth()
             userDao.deleteAllUsers()
+            plantDao?.deleteAllPlants()
         }
         return Result.success(true)
     }

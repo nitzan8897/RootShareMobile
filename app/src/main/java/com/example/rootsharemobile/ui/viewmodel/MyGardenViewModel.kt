@@ -128,11 +128,12 @@ class MyGardenViewModel(application: Application) : AndroidViewModel(application
         if (_uiState.value == GardenUiState.Loading) return
         _uiState.value = GardenUiState.Loading
         viewModelScope.launch {
-            // Ensure current userId is set so gardenPlants LiveData is scoped
-            if (_currentUserId.value == null) {
-                val user = tokenManager.getUser()
-                _currentUserId.value = user?.id ?: ""
-                Log.d("MyGardenVM", "loadPlants: userId set to ${_currentUserId.value}")
+            // Always refresh userId so a logout → login with a different account is handled
+            val user = tokenManager.getUser()
+            val userId = user?.id ?: ""
+            if (_currentUserId.value != userId) {
+                _currentUserId.value = userId
+                Log.d("MyGardenVM", "loadPlants: userId set to $userId")
             }
             fetchSpecies(token)
             val result = plantRepository.fetchAndStorePlants(token)
@@ -147,10 +148,11 @@ class MyGardenViewModel(application: Application) : AndroidViewModel(application
     fun refresh(token: String) {
         _uiState.value = GardenUiState.Loading
         viewModelScope.launch {
-            if (_currentUserId.value == null) {
-                val user = tokenManager.getUser()
-                _currentUserId.value = user?.id ?: ""
-                Log.d("MyGardenVM", "refresh: userId set to ${_currentUserId.value}")
+            val user = tokenManager.getUser()
+            val userId = user?.id ?: ""
+            if (_currentUserId.value != userId) {
+                _currentUserId.value = userId
+                Log.d("MyGardenVM", "refresh: userId set to $userId")
             }
             val result = plantRepository.fetchAndStorePlants(token)
             _uiState.value = result.fold(
