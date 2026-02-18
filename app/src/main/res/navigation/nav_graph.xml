@@ -94,7 +94,25 @@
         android:id="@+id/myGardenFragment"
         android:name="com.example.rootsharemobile.ui.fragment.shared.MyGardenFragment"
         android:label="My Garden"
-        tools:layout="@layout/fragment_my_garden" />
+        tools:layout="@layout/fragment_my_garden">
+
+        <!-- Navigate to plant details, passing the plant ID via SafeArgs -->
+        <action
+            android:id="@+id/action_garden_to_plant_details"
+            app:destination="@id/plantDetailsFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/plantDetailsFragment"
+        android:name="com.example.rootsharemobile.ui.fragment.garden.PlantDetailsFragment"
+        android:label="Plant Details"
+        tools:layout="@layout/fragment_plant_details">
+
+        <!-- SafeArgs: plant ID passed from MyGardenFragment -->
+        <argument
+            android:name="plantId"
+            app:argType="string" />
+    </fragment>
 
     <fragment
         android:id="@+id/communityFragment"

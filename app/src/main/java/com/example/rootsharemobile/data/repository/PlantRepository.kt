@@ -3,54 +3,64 @@ package com.example.rootsharemobile.data.repository
 import androidx.lifecycle.LiveData
 import com.example.rootsharemobile.data.local.db.dao.PlantDao
 import com.example.rootsharemobile.data.local.db.entity.PlantEntity
+import com.example.rootsharemobile.data.local.db.entity.PlantWithPostCount
 import com.example.rootsharemobile.data.model.CreatePlantRequest
 import com.example.rootsharemobile.data.model.Plant
+import com.example.rootsharemobile.data.model.Species
 import com.example.rootsharemobile.data.model.UpdatePlantRequest
 import com.example.rootsharemobile.data.remote.RetrofitClient
 import com.example.rootsharemobile.data.remote.mapHttpError
 import com.example.rootsharemobile.data.remote.mapNetworkError
+import com.example.rootsharemobile.data.remote.parseErrorBody
 
-/**
- * Repository for plant data.
- *
- * Follows the offline-first pattern mandated by the course:
- *  1. Fetch fresh data from the remote API.
- *  2. Persist it into Room (the Single Source of Truth).
- *  3. The UI observes Room LiveData — it never reads from the network directly.
- */
 class PlantRepository(private val plantDao: PlantDao) {
 
     private val apiService = RetrofitClient.apiService
 
     // -------------------------------------------------------------------------
-    // Room LiveData — observed by ViewModels and, through them, by Fragments.
+    // Room LiveData
     // -------------------------------------------------------------------------
 
-    /** Emits featured plants whenever the Room cache changes. */
     fun observeFeaturedPlants(): LiveData<List<PlantEntity>> =
         plantDao.observeFeaturedPlants()
 
-    /** Emits the full plant list whenever the Room cache changes. */
     fun observeAllPlants(): LiveData<List<PlantEntity>> =
         plantDao.observeAllPlants()
 
+    fun observeGardenPlantsWithPostCount(userId: String): LiveData<List<PlantWithPostCount>> =
+        plantDao.observeGardenPlantsWithPostCount(userId)
+
+    fun observePlantWithPostCount(plantId: String): LiveData<PlantWithPostCount?> =
+        plantDao.observePlantWithPostCount(plantId)
+
     // -------------------------------------------------------------------------
-    // Network + cache operations — called by ViewModels inside a coroutine.
+    // Species
     // -------------------------------------------------------------------------
 
-    /**
-     * Fetch featured plants from the API, save them to Room, then return
-     * a success/failure result (the UI reads from Room, not from this result).
-     */
+    suspend fun fetchSpecies(token: String): Result<List<Species>> {
+        return try {
+            val response = apiService.getSpecies("Bearer $token")
+            if (response.isSuccessful) {
+                Result.success(response.body() ?: emptyList())
+            } else {
+                Result.failure(Exception(mapHttpError(response.code(), "species")))
+            }
+        } catch (e: Exception) {
+            Result.failure(Exception(mapNetworkError(e)))
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Network + cache operations
+    // -------------------------------------------------------------------------
+
     suspend fun fetchAndStoreFeaturedPlants(token: String, limit: Int? = null): Result<Unit> {
         return try {
             val response = apiService.getFeaturedPlants("Bearer $token", limit)
             if (response.isSuccessful) {
                 val plants = response.body() ?: emptyList()
-                // Mark existing cached plants as non-featured before inserting new ones.
                 plantDao.clearFeaturedFlag()
-                val entities = plants.map { it.toEntity(isFeatured = true) }
-                plantDao.insertPlants(entities)
+                plantDao.insertPlants(plants.map { it.toEntity(isFeatured = true) })
                 Result.success(Unit)
             } else {
                 Result.failure(Exception(mapHttpError(response.code(), "plants")))
@@ -60,16 +70,13 @@ class PlantRepository(private val plantDao: PlantDao) {
         }
     }
 
-    /**
-     * Fetch all user plants from the API and persist them to Room.
-     */
     suspend fun fetchAndStorePlants(token: String): Result<Unit> {
         return try {
             val response = apiService.getPlants("Bearer $token")
             if (response.isSuccessful) {
                 val plants = response.body() ?: emptyList()
-                val entities = plants.map { it.toEntity(isFeatured = false) }
-                plantDao.insertPlants(entities)
+                plantDao.deleteNonFeaturedPlants()
+                plantDao.insertPlants(plants.map { it.toEntity(isFeatured = false) })
                 Result.success(Unit)
             } else {
                 Result.failure(Exception(mapHttpError(response.code(), "plants")))
@@ -79,9 +86,6 @@ class PlantRepository(private val plantDao: PlantDao) {
         }
     }
 
-    /**
-     * Create a plant via the API, then refresh the local cache.
-     */
     suspend fun createPlant(token: String, request: CreatePlantRequest): Result<Plant> {
         return try {
             val response = apiService.createPlant("Bearer $token", request)
@@ -90,20 +94,36 @@ class PlantRepository(private val plantDao: PlantDao) {
                 plantDao.insertPlants(listOf(plant.toEntity(isFeatured = false)))
                 Result.success(plant)
             } else {
-                Result.failure(Exception(mapHttpError(response.code(), "plant")))
+                val msg = parseErrorBody(response.errorBody()) ?: mapHttpError(response.code(), "plant")
+                Result.failure(Exception(msg))
             }
         } catch (e: Exception) {
             Result.failure(Exception(mapNetworkError(e)))
         }
     }
 
-    /**
-     * Delete a plant via the API and remove it from Room.
-     */
+    suspend fun updatePlant(token: String, id: String, request: UpdatePlantRequest): Result<Plant> {
+        return try {
+            val response = apiService.updatePlant("Bearer $token", id, request)
+            if (response.isSuccessful && response.body() != null) {
+                val plant = response.body()!!
+                val existing = plantDao.getPlantById(id)
+                plantDao.insertPlants(listOf(plant.toEntity(isFeatured = existing?.isFeatured ?: false)))
+                Result.success(plant)
+            } else {
+                val msg = parseErrorBody(response.errorBody()) ?: mapHttpError(response.code(), "plant")
+                Result.failure(Exception(msg))
+            }
+        } catch (e: Exception) {
+            Result.failure(Exception(mapNetworkError(e)))
+        }
+    }
+
     suspend fun deletePlant(token: String, id: String): Result<Boolean> {
         return try {
             val response = apiService.deletePlant("Bearer $token", id)
             if (response.isSuccessful) {
+                plantDao.deletePlantById(id)
                 Result.success(true)
             } else {
                 Result.failure(Exception(mapHttpError(response.code(), "plant")))
@@ -113,11 +133,10 @@ class PlantRepository(private val plantDao: PlantDao) {
         }
     }
 
-    /** Clear the local plant cache (called on logout). */
     suspend fun clearLocalCache() = plantDao.deleteAllPlants()
 
     // -------------------------------------------------------------------------
-    // Mapper helpers
+    // Mapper
     // -------------------------------------------------------------------------
 
     private fun Plant.toEntity(isFeatured: Boolean) = PlantEntity(

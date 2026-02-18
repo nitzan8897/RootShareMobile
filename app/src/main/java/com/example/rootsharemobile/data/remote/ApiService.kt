@@ -8,6 +8,7 @@ import com.example.rootsharemobile.data.model.LoginRequest
 import com.example.rootsharemobile.data.model.Plant
 import com.example.rootsharemobile.data.model.PlantStatus
 import com.example.rootsharemobile.data.model.Post
+import com.example.rootsharemobile.data.model.Species
 import com.example.rootsharemobile.data.model.RefreshTokenResponse
 import com.example.rootsharemobile.data.model.RegisterRequest
 import com.example.rootsharemobile.data.model.UpdatePlantRequest
@@ -103,6 +104,16 @@ interface ApiService {
         @Header("Authorization") token: String,
         @Part image: MultipartBody.Part
     ): Response<User>
+
+    // ==================== SPECIES ====================
+
+    /**
+     * Get all approved species.
+     */
+    @GET("species")
+    suspend fun getSpecies(
+        @Header("Authorization") token: String
+    ): Response<List<Species>>
 
     // ==================== PLANTS ====================
 

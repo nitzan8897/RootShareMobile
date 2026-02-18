@@ -1,11 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24"
     android:tint="?attr/colorControlNormal">
-  <!-- Material "eco" icon — leaf -->
-  <path
-      android:fillColor="@android:color/white"
-      android:pathData="M6.05,8.05c-2.73,2.73 -2.73,7.17 0,9.9C7.42,19.32 9.21,20 11,20s3.58,-0.68 4.95,-2.05C19.43,14.47 20,4 20,4S9.53,4.57 6.05,8.05zM14.54,16.54C13.59,17.49 12.34,18 11,18c-0.89,0 -1.73,-0.25 -2.48,-0.68L15.32,10.5l-1.41,-1.41L7.09,15.9c-1.15,-1.71 -0.98,-4.08 0.54,-5.6C9.56,8.37 14.33,6.3 17.46,5.68 16.88,8.18 15.64,12.47 14.54,16.54z"/>
+
+    <!-- Flower head (filled circle at top) -->
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M12,2C9.79,2 8,3.79 8,6C8,8.21 9.79,10 12,10C14.21,10 16,8.21 16,6C16,3.79 14.21,2 12,2Z" />
+
+    <!-- Left leaf -->
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M11,14C8,13 7,10 7,9C7,8 9,8 11,9L11,14Z" />
+
+    <!-- Right leaf -->
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M13,14C16,13 17,10 17,9C17,8 15,8 13,9L13,14Z" />
+
+    <!-- Stem -->
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M11,9H13V16H11Z" />
+
+    <!-- Pot rim -->
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M8,15H16V17H8Z" />
+
+    <!-- Pot body -->
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M9,17H15L14,22H10Z" />
+
 </vector>

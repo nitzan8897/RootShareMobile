@@ -6,6 +6,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.example.rootsharemobile.data.local.db.entity.PlantEntity
+import com.example.rootsharemobile.data.local.db.entity.PlantWithPostCount
 
 /**
  * Data Access Object for plant-related database operations.
@@ -13,39 +14,54 @@ import com.example.rootsharemobile.data.local.db.entity.PlantEntity
 @Dao
 interface PlantDao {
 
-    /**
-     * Insert or replace a list of plants.
-     * Called after every successful API fetch to keep the cache fresh.
-     */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertPlants(plants: List<PlantEntity>)
 
-    /**
-     * Observe all featured plants (shown on the home screen).
-     * The UI automatically updates when this data changes in Room.
-     */
     @Query("SELECT * FROM plants WHERE isFeatured = 1 ORDER BY createdAt DESC")
     fun observeFeaturedPlants(): LiveData<List<PlantEntity>>
 
-    /**
-     * Observe every plant belonging to the current user (full garden list).
-     */
     @Query("SELECT * FROM plants ORDER BY createdAt DESC")
     fun observeAllPlants(): LiveData<List<PlantEntity>>
 
-    /** Observe total plant count for the dashboard. */
-    @Query("SELECT COUNT(*) FROM plants")
-    fun observePlantCount(): LiveData<Int>
+    /**
+     * Garden list with live post-count per plant, filtered to a specific user.
+     */
+    @Query("""
+        SELECT p.*, (SELECT COUNT(*) FROM posts WHERE plantId = p.id) AS postCount
+        FROM plants p
+        WHERE p.userId = :userId
+        ORDER BY p.createdAt DESC
+    """)
+    fun observeGardenPlantsWithPostCount(userId: String): LiveData<List<PlantWithPostCount>>
 
     /**
-     * Clear all plants (e.g., on logout or full refresh).
+     * Single plant observation for the details screen.
      */
+    @Query("""
+        SELECT p.*, (SELECT COUNT(*) FROM posts WHERE plantId = p.id) AS postCount
+        FROM plants p
+        WHERE p.id = :plantId
+        LIMIT 1
+    """)
+    fun observePlantWithPostCount(plantId: String): LiveData<PlantWithPostCount?>
+
+    /** Observe total plant count for the dashboard, scoped to a user. */
+    @Query("SELECT COUNT(*) FROM plants WHERE userId = :userId")
+    fun observePlantCount(userId: String): LiveData<Int>
+
+    @Query("SELECT * FROM plants WHERE id = :id LIMIT 1")
+    suspend fun getPlantById(id: String): PlantEntity?
+
+    @Query("DELETE FROM plants WHERE id = :id")
+    suspend fun deletePlantById(id: String)
+
     @Query("DELETE FROM plants")
     suspend fun deleteAllPlants()
 
-    /**
-     * Clear only the featured-plant cache before re-fetching.
-     */
+    /** Remove all non-featured plants so stale rows from other users are evicted. */
+    @Query("DELETE FROM plants WHERE isFeatured = 0")
+    suspend fun deleteNonFeaturedPlants()
+
     @Query("UPDATE plants SET isFeatured = 0")
     suspend fun clearFeaturedFlag()
 }
