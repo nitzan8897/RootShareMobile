@@ -78,7 +78,7 @@ API_BASE_URL=http://10.0.2.2:3000/api/
 | `GOOGLE_WEB_CLIENT_ID` | Your Google OAuth Web Client ID from the Google Cloud Console. Required for Google Sign-In. |
 | `API_BASE_URL` | The backend API URL. `10.0.2.2` is the Android emulator alias for `localhost`. |
 
-> `local.properties` is git-ignored. Each developer needs to create their own.
+> `local.properties` is git-ignored.
 
 ### 5. Build & Run
 
