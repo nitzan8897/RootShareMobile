@@ -27,9 +27,18 @@ interface PostDao {
     @Query("SELECT * FROM posts ORDER BY createdAt DESC")
     fun observeAllPosts(): LiveData<List<PostEntity>>
 
+    @Query("SELECT * FROM posts WHERE userId = :userId ORDER BY createdAt DESC")
+    fun observeUserPosts(userId: String): LiveData<List<PostEntity>>
+
     /** Observe total post count for the dashboard. */
     @Query("SELECT COUNT(*) FROM posts")
     fun observePostCount(): LiveData<Int>
+
+    @Query("SELECT * FROM posts WHERE id = :postId LIMIT 1")
+    suspend fun getPostById(postId: String): PostEntity?
+
+    @Query("DELETE FROM posts WHERE id = :postId")
+    suspend fun deletePostById(postId: String)
 
     /**
      * Remove all posts (e.g., on logout or full refresh).
