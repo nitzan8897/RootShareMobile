@@ -28,7 +28,7 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
 
     private val tokenManager = TokenManager(application)
     private val database = AppDatabase.getInstance(application)
-    private val authRepository = AuthRepository(tokenManager, database.userDao())
+    private val authRepository = AuthRepository(tokenManager, database.userDao(), database.plantDao())
 
     /** Dashboard stats from Room — reactive counts for profile mini-dashboard. */
     val plantCount: LiveData<Int> = authRepository.observeCurrentUser().switchMap { user ->
