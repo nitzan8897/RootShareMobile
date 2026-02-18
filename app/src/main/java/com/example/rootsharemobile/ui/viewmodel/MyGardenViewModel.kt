@@ -107,9 +107,16 @@ class MyGardenViewModel(application: Application) : AndroidViewModel(application
     fun fetchSpecies(token: String) {
         if (_speciesList.value?.isNotEmpty() == true) return
         viewModelScope.launch {
-            plantRepository.fetchSpecies(token).onSuccess { list ->
-                _speciesList.value = list
-            }
+            val result = plantRepository.fetchSpecies(token)
+            result.fold(
+                onSuccess = { list ->
+                    Log.d("MyGardenVM", "fetchSpecies: loaded ${list.size} species")
+                    _speciesList.value = list
+                },
+                onFailure = { e ->
+                    Log.e("MyGardenVM", "fetchSpecies failed: ${e.message}")
+                }
+            )
         }
     }
 
@@ -127,6 +134,7 @@ class MyGardenViewModel(application: Application) : AndroidViewModel(application
                 _currentUserId.value = user?.id ?: ""
                 Log.d("MyGardenVM", "loadPlants: userId set to ${_currentUserId.value}")
             }
+            fetchSpecies(token)
             val result = plantRepository.fetchAndStorePlants(token)
             Log.d("MyGardenVM", "loadPlants result: $result")
             _uiState.value = result.fold(
