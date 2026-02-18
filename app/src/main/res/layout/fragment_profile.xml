@@ -18,15 +18,13 @@
             android:layout_width="40dp"
             android:layout_height="40dp"
             android:src="@drawable/ic_logout"
-            android:tint="@null"
-            android:background="?attr/selectableItemBackgroundBorderless"
+            android:background="@android:color/transparent"
             android:contentDescription="@string/btn_logout"
-            android:scaleType="center"
+            android:scaleType="centerInside"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            android:layout_marginTop="4dp" />
+            app:layout_constraintStart_toStartOf="parent" />
 
-        <!-- Screen title — centred alongside the logout button -->
+        <!-- Screen title -->
         <TextView
             android:id="@+id/text_profile_title"
             android:layout_width="0dp"
@@ -38,54 +36,50 @@
             android:gravity="center"
             app:layout_constraintTop_toTopOf="@id/btn_logout"
             app:layout_constraintBottom_toBottomOf="@id/btn_logout"
-            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintStart_toEndOf="@id/btn_logout"
             app:layout_constraintEnd_toEndOf="parent" />
 
-        <!-- Profile picture + pencil edit button overlay -->
+        <!-- Profile picture container (FrameLayout for overlay pencil button) -->
         <FrameLayout
-            android:id="@+id/profile_picture_container"
-            android:layout_width="108dp"
-            android:layout_height="108dp"
-            app:layout_constraintTop_toBottomOf="@id/btn_logout"
+            android:id="@+id/container_profile_picture"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            app:layout_constraintTop_toBottomOf="@id/text_profile_title"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             android:layout_marginTop="24dp">
 
             <ImageView
                 android:id="@+id/image_profile_picture"
-                android:layout_width="100dp"
-                android:layout_height="100dp"
+                android:layout_width="120dp"
+                android:layout_height="120dp"
                 android:scaleType="centerCrop"
                 android:contentDescription="@string/cd_profile_picture"
-                android:background="@drawable/bg_profile_placeholder"
-                android:layout_gravity="top|start" />
+                android:background="@android:color/transparent" />
 
-            <!-- Pencil button — bottom-right corner of the profile picture -->
-            <ImageButton
-                android:id="@+id/btn_edit_photo"
+            <!-- Upload progress overlay -->
+            <ProgressBar
+                android:id="@+id/progress_upload"
                 android:layout_width="32dp"
                 android:layout_height="32dp"
-                android:src="@drawable/ic_edit"
-                android:tint="@null"
-                android:background="@drawable/bg_edit_photo_button"
-                android:padding="6dp"
-                android:elevation="4dp"
+                android:indeterminateTint="@color/emerald_500"
+                android:visibility="gone"
+                android:layout_gravity="center" />
+
+            <!-- Pencil edit button — bottom-right of profile picture -->
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/btn_edit_photo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|end"
+                android:src="@drawable/ic_edit_pencil"
                 android:contentDescription="@string/btn_change_photo"
-                android:layout_gravity="bottom|end" />
+                app:fabSize="mini"
+                app:backgroundTint="@color/emerald_500"
+                app:tint="@color/white"
+                app:elevation="2dp" />
 
         </FrameLayout>
-
-        <!-- Upload progress (centred over the profile picture area) -->
-        <ProgressBar
-            android:id="@+id/progress_upload"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:indeterminateTint="@color/emerald_500"
-            android:visibility="gone"
-            app:layout_constraintTop_toTopOf="@id/profile_picture_container"
-            app:layout_constraintBottom_toBottomOf="@id/profile_picture_container"
-            app:layout_constraintStart_toStartOf="@id/profile_picture_container"
-            app:layout_constraintEnd_toEndOf="@id/profile_picture_container" />
 
         <!-- Upload status message -->
         <TextView
@@ -96,10 +90,127 @@
             android:textColor="@color/emerald_600"
             android:gravity="center"
             android:visibility="gone"
-            app:layout_constraintTop_toBottomOf="@id/profile_picture_container"
+            app:layout_constraintTop_toBottomOf="@id/container_profile_picture"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             android:layout_marginTop="8dp" />
+
+        <!-- ── Mini Dashboard ──────────────────────────────────── -->
+        <LinearLayout
+            android:id="@+id/dashboard_container"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:paddingVertical="12dp"
+            app:layout_constraintTop_toBottomOf="@id/text_upload_status"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginTop="16dp">
+
+            <!-- Plants stat -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:background="@drawable/bg_dashboard_card"
+                android:padding="12dp"
+                android:layout_marginEnd="6dp">
+
+                <TextView
+                    android:id="@+id/text_stat_plants_emoji"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="24sp" />
+
+                <TextView
+                    android:id="@+id/text_stat_plants_count"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/gray_900" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/stat_plants"
+                    android:textSize="11sp"
+                    android:textColor="@color/gray_500" />
+
+            </LinearLayout>
+
+            <!-- Posts stat -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:background="@drawable/bg_dashboard_card"
+                android:padding="12dp"
+                android:layout_marginHorizontal="6dp">
+
+                <TextView
+                    android:id="@+id/text_stat_posts_emoji"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="24sp" />
+
+                <TextView
+                    android:id="@+id/text_stat_posts_count"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/gray_900" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/stat_posts"
+                    android:textSize="11sp"
+                    android:textColor="@color/gray_500" />
+
+            </LinearLayout>
+
+            <!-- Member since -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:background="@drawable/bg_dashboard_card"
+                android:padding="12dp"
+                android:layout_marginStart="6dp">
+
+                <TextView
+                    android:id="@+id/text_stat_streak_emoji"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="24sp" />
+
+                <TextView
+                    android:id="@+id/text_stat_member_since"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/gray_900" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/stat_member"
+                    android:textSize="11sp"
+                    android:textColor="@color/gray_500" />
+
+            </LinearLayout>
+
+        </LinearLayout>
 
         <!-- Divider -->
         <View
@@ -107,10 +218,10 @@
             android:layout_width="0dp"
             android:layout_height="1dp"
             android:background="@color/colorDivider"
-            app:layout_constraintTop_toBottomOf="@id/text_upload_status"
+            app:layout_constraintTop_toBottomOf="@id/dashboard_container"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            android:layout_marginTop="20dp" />
+            android:layout_marginTop="16dp" />
 
         <!-- Username label -->
         <TextView
@@ -126,6 +237,7 @@
             app:layout_constraintStart_toStartOf="parent"
             android:layout_marginTop="20dp" />
 
+        <!-- Username display (read-only mode) -->
         <TextView
             android:id="@+id/text_username"
             android:layout_width="0dp"
@@ -138,6 +250,35 @@
             app:layout_constraintEnd_toEndOf="parent"
             android:layout_marginTop="4dp" />
 
+        <!-- Username edit (edit mode) -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/input_layout_username"
+            style="@style/Widget.RootShare.TextInputLayout"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            app:layout_constraintTop_toBottomOf="@id/label_username"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginTop="4dp">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/edit_username"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="text"
+                android:maxLines="1" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Barrier below whichever username view is visible -->
+        <androidx.constraintlayout.widget.Barrier
+            android:id="@+id/barrier_username"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:barrierDirection="bottom"
+            app:constraint_referenced_ids="text_username,input_layout_username" />
+
         <!-- Email label -->
         <TextView
             android:id="@+id/label_email"
@@ -148,10 +289,11 @@
             android:textColor="@color/gray_500"
             android:textAllCaps="true"
             android:letterSpacing="0.08"
-            app:layout_constraintTop_toBottomOf="@id/text_username"
+            app:layout_constraintTop_toBottomOf="@id/barrier_username"
             app:layout_constraintStart_toStartOf="parent"
             android:layout_marginTop="16dp" />
 
+        <!-- Email display (read-only) -->
         <TextView
             android:id="@+id/text_email"
             android:layout_width="0dp"
@@ -174,7 +316,21 @@
             app:layout_constraintTop_toBottomOf="@id/text_email"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="12dp" />
+
+        <!-- Edit / Save profile button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_edit_profile"
+            style="@style/Widget.RootShare.Button.Outlined"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="@string/btn_edit_profile"
+            app:icon="@drawable/ic_edit_pencil"
+            app:iconTint="@color/gray_700"
+            app:layout_constraintTop_toBottomOf="@id/text_error"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginTop="24dp"
             android:layout_marginBottom="32dp" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>

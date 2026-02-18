@@ -25,7 +25,6 @@ interface PlantDao {
 
     /**
      * Garden list with live post-count per plant (correlated subquery).
-     * No JOIN table needed — Room handles the subquery at the SQL level.
      */
     @Query("""
         SELECT p.*, (SELECT COUNT(*) FROM posts WHERE plantId = p.id) AS postCount
@@ -44,6 +43,10 @@ interface PlantDao {
         LIMIT 1
     """)
     fun observePlantWithPostCount(plantId: String): LiveData<PlantWithPostCount?>
+
+    /** Observe total plant count for the dashboard. */
+    @Query("SELECT COUNT(*) FROM plants")
+    fun observePlantCount(): LiveData<Int>
 
     @Query("SELECT * FROM plants WHERE id = :id LIMIT 1")
     suspend fun getPlantById(id: String): PlantEntity?

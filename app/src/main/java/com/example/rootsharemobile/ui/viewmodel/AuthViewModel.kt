@@ -29,6 +29,10 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     private val database = AppDatabase.getInstance(application)
     private val authRepository = AuthRepository(tokenManager, database.userDao())
 
+    /** Dashboard stats from Room — reactive counts for profile mini-dashboard. */
+    val plantCount: LiveData<Int> = database.plantDao().observePlantCount()
+    val postCount: LiveData<Int> = database.postDao().observePostCount()
+
     // -------------------------------------------------------------------------
     // Sealed UI state for authentication actions
     // -------------------------------------------------------------------------
@@ -137,6 +141,26 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
+     * Suspend version of logout — the caller awaits completion before navigating.
+     * This prevents auto-login in LoginFragment (which observes isLoggedIn) by
+     * ensuring the DataStore token is cleared before the Login screen appears.
+     */
+    suspend fun logoutSuspend() {
+        authRepository.logout()
+        _authState.value = AuthUiState.Idle
+    }
+
+    /**
+     * Fetch the current user from the API and sync to Room.
+     * ProfileFragment calls this on view creation so the profile data is always fresh.
+     */
+    fun fetchCurrentUser() {
+        viewModelScope.launch {
+            authRepository.getCurrentUser()
+        }
+    }
+
+    /**
      * Upload a new profile picture.
      * Fragments observe [uploadState] for progress and result.
      */
@@ -149,6 +173,45 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                 onFailure = { UploadState.Error(it.message ?: "Upload failed.") }
             )
         }
+    }
+
+    /**
+     * Remove the custom profile photo and revert to the Google/default photo.
+     * Clears localProfileImageUrl from Room so Glide falls back to the server URL.
+     */
+    fun removeProfileImage() {
+        viewModelScope.launch {
+            authRepository.removeLocalProfileImage()
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Profile editing
+    // -------------------------------------------------------------------------
+
+    sealed class ProfileUpdateState {
+        object Idle : ProfileUpdateState()
+        object Saving : ProfileUpdateState()
+        object Success : ProfileUpdateState()
+        data class Error(val message: String) : ProfileUpdateState()
+    }
+
+    private val _profileUpdateState = MutableLiveData<ProfileUpdateState>(ProfileUpdateState.Idle)
+    val profileUpdateState: LiveData<ProfileUpdateState> = _profileUpdateState
+
+    fun updateProfile(username: String) {
+        _profileUpdateState.value = ProfileUpdateState.Saving
+        viewModelScope.launch {
+            val result = authRepository.updateProfile(username)
+            _profileUpdateState.value = result.fold(
+                onSuccess = { ProfileUpdateState.Success },
+                onFailure = { ProfileUpdateState.Error(it.message ?: "Update failed.") }
+            )
+        }
+    }
+
+    fun resetProfileUpdateState() {
+        _profileUpdateState.value = ProfileUpdateState.Idle
     }
 
     /** Reset upload state after the Fragment has handled the result. */

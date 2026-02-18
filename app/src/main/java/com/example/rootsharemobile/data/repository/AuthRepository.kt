@@ -144,8 +144,6 @@ class AuthRepository(
      * Always succeeds from the UI's perspective so the user is never stuck.
      */
     suspend fun logout(): Result<Boolean> {
-        // Use try-catch-finally as a statement (not expression) so that
-        // cleanup always runs, and we return success unconditionally.
         try {
             val accessToken = tokenManager.getAccessToken()
             if (accessToken != null) {
@@ -215,13 +213,28 @@ class AuthRepository(
         }
     }
 
-    /**
-     * Clear the locally-stored custom profile image URL so Room falls back to
-     * the server-provided URL (e.g. the original Google profile photo).
-     */
+    /** Remove the locally stored profile image URL so Glide falls back to the server URL. */
     suspend fun removeLocalProfileImage() {
-        val current = userDao.getCurrentUser() ?: return
-        userDao.insertUser(current.copy(localProfileImageUrl = null))
+        userDao.clearLocalProfileImage()
+    }
+
+    /** Update the user's profile on the server and sync to Room. */
+    suspend fun updateProfile(username: String): Result<User> {
+        return try {
+            val token = tokenManager.getAccessToken()
+                ?: return Result.failure(Exception("Not authenticated"))
+            val body = mapOf("username" to username)
+            val response = apiService.updateProfile("Bearer $token", body)
+            if (response.isSuccessful) {
+                val user = response.body()!!
+                userDao.insertUser(user.toEntity())
+                Result.success(user)
+            } else {
+                Result.failure(Exception("Update failed: ${response.message()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(Exception("Network error: ${e.message}"))
+        }
     }
 
     /** Convenience accessor for the current access token. */
