@@ -1,5 +1,8 @@
 package com.example.rootsharemobile.data.repository
 
+import androidx.lifecycle.LiveData
+import com.example.rootsharemobile.data.local.db.dao.PostDao
+import com.example.rootsharemobile.data.local.db.entity.PostEntity
 import com.example.rootsharemobile.data.model.CreatePostRequest
 import com.example.rootsharemobile.data.model.Post
 import com.example.rootsharemobile.data.model.UpdatePostRequest
@@ -8,21 +11,42 @@ import com.example.rootsharemobile.data.remote.mapHttpError
 import com.example.rootsharemobile.data.remote.mapNetworkError
 
 /**
- * Repository for Post data operations.
- * Acts as a single source of truth for post data.
+ * Repository for community post data.
+ *
+ * Enforces the offline-first pattern:
+ *  1. Fetch from the remote API.
+ *  2. Save to Room (Single Source of Truth).
+ *  3. The UI observes Room LiveData exclusively.
  */
-class PostRepository {
+class PostRepository(private val postDao: PostDao) {
 
     private val apiService = RetrofitClient.apiService
 
+    // -------------------------------------------------------------------------
+    // Room LiveData — observed by ViewModels.
+    // -------------------------------------------------------------------------
+
+    /** Emits the full post feed whenever the Room cache changes. */
+    fun observeAllPosts(): LiveData<List<PostEntity>> =
+        postDao.observeAllPosts()
+
+    // -------------------------------------------------------------------------
+    // Network + cache operations.
+    // -------------------------------------------------------------------------
+
     /**
-     * Get all posts (community feed).
+     * Fetch all community posts from the API, persist them to Room,
+     * and return a success/failure result for error handling in the ViewModel.
      */
-    suspend fun getPosts(token: String): Result<List<Post>> {
+    suspend fun fetchAndStorePosts(token: String): Result<Unit> {
         return try {
             val response = apiService.getPosts("Bearer $token")
             if (response.isSuccessful) {
-                Result.success(response.body() ?: emptyList())
+                val posts = response.body() ?: emptyList()
+                postDao.deleteAllPosts()
+                val entities = posts.map { it.toEntity() }
+                postDao.insertPosts(entities)
+                Result.success(Unit)
             } else {
                 Result.failure(Exception(mapHttpError(response.code(), "posts")))
             }
@@ -32,29 +56,15 @@ class PostRepository {
     }
 
     /**
-     * Get a specific post by ID.
-     */
-    suspend fun getPostById(token: String, id: String): Result<Post> {
-        return try {
-            val response = apiService.getPostById("Bearer $token", id)
-            if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!)
-            } else {
-                Result.failure(Exception(mapHttpError(response.code(), "post")))
-            }
-        } catch (e: Exception) {
-            Result.failure(Exception(mapNetworkError(e)))
-        }
-    }
-
-    /**
-     * Create a new post.
+     * Create a new post via the API and insert the result into Room.
      */
     suspend fun createPost(token: String, request: CreatePostRequest): Result<Post> {
         return try {
             val response = apiService.createPost("Bearer $token", request)
             if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!)
+                val post = response.body()!!
+                postDao.insertPosts(listOf(post.toEntity()))
+                Result.success(post)
             } else {
                 Result.failure(Exception(mapHttpError(response.code(), "post")))
             }
@@ -63,35 +73,25 @@ class PostRepository {
         }
     }
 
-    /**
-     * Update an existing post.
-     */
-    suspend fun updatePost(token: String, id: String, request: UpdatePostRequest): Result<Post> {
-        return try {
-            val response = apiService.updatePost("Bearer $token", id, request)
-            if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!)
-            } else {
-                Result.failure(Exception(mapHttpError(response.code(), "post")))
-            }
-        } catch (e: Exception) {
-            Result.failure(Exception(mapNetworkError(e)))
-        }
-    }
+    /** Clear the local post cache (called on logout). */
+    suspend fun clearLocalCache() = postDao.deleteAllPosts()
 
-    /**
-     * Delete a post.
-     */
-    suspend fun deletePost(token: String, id: String): Result<Boolean> {
-        return try {
-            val response = apiService.deletePost("Bearer $token", id)
-            if (response.isSuccessful) {
-                Result.success(true)
-            } else {
-                Result.failure(Exception(mapHttpError(response.code(), "post")))
-            }
-        } catch (e: Exception) {
-            Result.failure(Exception(mapNetworkError(e)))
-        }
-    }
+    // -------------------------------------------------------------------------
+    // Mapper helpers
+    // -------------------------------------------------------------------------
+
+    private fun Post.toEntity() = PostEntity(
+        id = this.id,
+        userId = this.userId,
+        plantId = this.plant?.id,
+        plantName = this.plant?.name,
+        plantSpecies = this.plant?.species,
+        postType = this.type.name,
+        content = this.content,
+        imagesJson = this.images.joinToString(","),
+        likesCount = this.likesCount,
+        commentsCount = this.commentsCount,
+        createdAt = this.createdAt,
+        updatedAt = this.updatedAt
+    )
 }
