@@ -115,12 +115,6 @@
     </fragment>
 
     <fragment
-        android:id="@+id/myPostsFragment"
-        android:name="com.example.rootsharemobile.ui.fragment.posts.MyPostsFragment"
-        android:label="My Posts"
-        tools:layout="@layout/fragment_my_posts" />
-
-    <fragment
         android:id="@+id/communityFragment"
         android:name="com.example.rootsharemobile.ui.fragment.shared.CommunityFragment"
         android:label="Community"

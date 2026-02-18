@@ -12,11 +12,6 @@
         android:title="@string/nav_my_garden" />
 
     <item
-        android:id="@+id/myPostsFragment"
-        android:icon="@drawable/ic_nav_posts"
-        android:title="@string/nav_my_posts" />
-
-    <item
         android:id="@+id/communityFragment"
         android:icon="@drawable/ic_nav_community"
         android:title="@string/nav_community" />

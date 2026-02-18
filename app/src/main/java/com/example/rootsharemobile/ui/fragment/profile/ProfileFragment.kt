@@ -7,18 +7,26 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+import androidx.recyclerview.widget.GridLayoutManager
 import com.bumptech.glide.Glide
 import com.example.rootsharemobile.R
+import com.example.rootsharemobile.data.local.db.entity.PostEntity
 import com.example.rootsharemobile.data.remote.ApiConfig
 import com.example.rootsharemobile.databinding.FragmentProfileBinding
+import com.example.rootsharemobile.ui.adapter.GridCardAdapter
+import com.example.rootsharemobile.ui.adapter.toGridCardItem
 import com.example.rootsharemobile.ui.viewmodel.AuthViewModel
+import com.example.rootsharemobile.ui.viewmodel.MyPostsViewModel
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.launch
@@ -33,9 +41,13 @@ class ProfileFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val authViewModel: AuthViewModel by viewModels()
+    private val postsViewModel: MyPostsViewModel by activityViewModels()
 
     private var cameraImageUri: Uri? = null
     private var isEditMode = false
+
+    private lateinit var postsGridAdapter: GridCardAdapter
+    private var postsList: List<PostEntity> = emptyList()
 
     // ── Activity Result launchers ────────────────────────────────────────────
 
@@ -67,8 +79,82 @@ class ProfileFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         authViewModel.fetchCurrentUser()
+        setupPostsGrid()
         observeViewModel()
         setupClickListeners()
+        fetchPosts()
+    }
+
+    // ── Posts grid setup ─────────────────────────────────────────────────────
+
+    private fun setupPostsGrid() {
+        postsGridAdapter = GridCardAdapter { item ->
+            val post = postsList.find { it.id == item.id } ?: return@GridCardAdapter
+            showPostActionsDialog(post)
+        }
+        binding.recyclerMyPosts.apply {
+            layoutManager = GridLayoutManager(requireContext(), 2)
+            adapter = postsGridAdapter
+        }
+    }
+
+    private fun fetchPosts() {
+        lifecycleScope.launch {
+            val token = authViewModel.getAccessToken() ?: return@launch
+            postsViewModel.loadPosts(token)
+        }
+    }
+
+    private fun showPostActionsDialog(post: PostEntity) {
+        val options = arrayOf(
+            getString(R.string.dialog_edit_post_title),
+            getString(R.string.dialog_delete_post_title)
+        )
+        AlertDialog.Builder(requireContext())
+            .setTitle(R.string.dialog_post_actions_title)
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> showEditPostDialog(post)
+                    1 -> showDeletePostDialog(post)
+                }
+            }
+            .setNegativeButton(R.string.btn_cancel, null)
+            .show()
+    }
+
+    private fun showEditPostDialog(post: PostEntity) {
+        val editText = EditText(requireContext()).apply {
+            setText(post.content)
+            setPadding(64, 32, 64, 32)
+        }
+        AlertDialog.Builder(requireContext())
+            .setTitle(R.string.dialog_edit_post_title)
+            .setView(editText)
+            .setPositiveButton(R.string.btn_save_changes) { _, _ ->
+                val newContent = editText.text.toString().trim()
+                if (newContent.isNotBlank() && newContent != post.content) {
+                    lifecycleScope.launch {
+                        val token = authViewModel.getAccessToken() ?: return@launch
+                        postsViewModel.updatePost(token, post.id, newContent)
+                    }
+                }
+            }
+            .setNegativeButton(R.string.btn_cancel, null)
+            .show()
+    }
+
+    private fun showDeletePostDialog(post: PostEntity) {
+        AlertDialog.Builder(requireContext())
+            .setTitle(R.string.dialog_delete_post_title)
+            .setMessage(R.string.dialog_delete_post_message)
+            .setPositiveButton(R.string.btn_confirm_delete) { _, _ ->
+                lifecycleScope.launch {
+                    val token = authViewModel.getAccessToken() ?: return@launch
+                    postsViewModel.deletePost(token, post.id)
+                }
+            }
+            .setNegativeButton(R.string.btn_cancel, null)
+            .show()
     }
 
     // ── LiveData observers ──────────────────────────────────────────────────
@@ -97,45 +183,41 @@ class ProfileFragment : Fragment() {
                 } else {
                     binding.imageProfilePicture.setImageResource(R.color.gray_200)
                 }
-                // Member-since from createdAt (YYYY-MM-DD...)
-                val memberSince = user.createdAt.take(7).replace("-", "/") // e.g. "2025/01"
+                val memberSince = user.createdAt.take(7).replace("-", "/")
                 binding.textStatMemberSince.text = memberSince
 
-                // Streak emoji: days since account creation
                 val daysSinceCreation = try {
                     val created = java.time.LocalDate.parse(user.createdAt.take(10))
                     java.time.temporal.ChronoUnit.DAYS.between(created, java.time.LocalDate.now())
                 } catch (_: Exception) { 0L }
                 binding.textStatStreakEmoji.text = when {
-                    daysSinceCreation >= 365 -> "\uD83C\uDFC6" // trophy
-                    daysSinceCreation >= 90  -> "\u2B50"        // star
-                    daysSinceCreation >= 30  -> "\uD83D\uDD25"  // fire
-                    else                     -> "\uD83C\uDF31"  // seedling
+                    daysSinceCreation >= 365 -> "\uD83C\uDFC6"
+                    daysSinceCreation >= 90  -> "\u2B50"
+                    daysSinceCreation >= 30  -> "\uD83D\uDD25"
+                    else                     -> "\uD83C\uDF31"
                 }
             }
         }
 
-        // Dashboard: plant count with progression emoji
         authViewModel.plantCount.observe(viewLifecycleOwner) { count ->
             binding.textStatPlantsCount.text = count.toString()
             binding.textStatPlantsEmoji.text = when {
-                count >= 20 -> "\uD83C\uDF33" // deciduous tree (pro)
-                count >= 10 -> "\uD83C\uDF3F" // herb
-                count >= 5  -> "\uD83C\uDF3E" // rice
-                count >= 1  -> "\uD83C\uDF3B" // sunflower
-                else        -> "\uD83C\uDF31" // seedling (beginner)
+                count >= 20 -> "\uD83C\uDF33"
+                count >= 10 -> "\uD83C\uDF3F"
+                count >= 5  -> "\uD83C\uDF3E"
+                count >= 1  -> "\uD83C\uDF3B"
+                else        -> "\uD83C\uDF31"
             }
         }
 
-        // Dashboard: post count with social emoji
         authViewModel.postCount.observe(viewLifecycleOwner) { count ->
             binding.textStatPostsCount.text = count.toString()
             binding.textStatPostsEmoji.text = when {
-                count >= 20 -> "\uD83D\uDCE3" // megaphone (influencer)
-                count >= 10 -> "\uD83D\uDCAC" // speech balloon
-                count >= 5  -> "\u270D\uFE0F"  // writing hand
-                count >= 1  -> "\uD83D\uDCDD" // memo
-                else        -> "\uD83D\uDE36" // face without mouth (lurker)
+                count >= 20 -> "\uD83D\uDCE3"
+                count >= 10 -> "\uD83D\uDCAC"
+                count >= 5  -> "\u270D\uFE0F"
+                count >= 1  -> "\uD83D\uDCDD"
+                else        -> "\uD83D\uDE36"
             }
         }
 
@@ -186,6 +268,21 @@ class ProfileFragment : Fragment() {
                     showSnackbar(state.message)
                     authViewModel.resetProfileUpdateState()
                 }
+            }
+        }
+
+        postsViewModel.userPosts.observe(viewLifecycleOwner) { posts ->
+            postsList = posts
+            postsGridAdapter.submitList(posts.map { it.toGridCardItem() })
+            val hasPosts = posts.isNotEmpty()
+            binding.recyclerMyPosts.visibility   = if (hasPosts) View.VISIBLE else View.GONE
+            binding.layoutPostsEmpty.visibility  = if (hasPosts) View.GONE    else View.VISIBLE
+        }
+
+        postsViewModel.snackMessage.observe(viewLifecycleOwner) { msg ->
+            if (!msg.isNullOrBlank()) {
+                showSnackbar(msg)
+                postsViewModel.clearSnackMessage()
             }
         }
     }
