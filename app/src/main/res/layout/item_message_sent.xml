@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="end|bottom"
+    android:paddingStart="48dp"
+    android:paddingEnd="12dp"
+    android:paddingVertical="4dp">
+
+    <!-- Message column -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="end">
+
+        <TextView
+            android:id="@+id/messageText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:maxWidth="240dp"
+            android:background="@drawable/bg_message_sent"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="8dp"
+            android:textSize="15sp"
+            android:textColor="@android:color/white"
+            tools:text="Hi! Yes, it's still available" />
+
+        <TextView
+            android:id="@+id/messageTimestamp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="4dp"
+            android:paddingVertical="2dp"
+            android:textSize="11sp"
+            android:textColor="@color/gray_400"
+            tools:text="10:02 AM" />
+    </LinearLayout>
+
+    <!-- Avatar — marginBottom pushes above timestamp to align with bubble bottom -->
+    <FrameLayout
+        android:id="@+id/avatarFrame"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_marginStart="6dp"
+        android:layout_marginBottom="18dp"
+        android:background="@drawable/bg_avatar_circle">
+
+        <TextView
+            android:id="@+id/avatarInitial"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:textColor="@color/gray_500"
+            tools:text="M" />
+    </FrameLayout>
+</LinearLayout>
