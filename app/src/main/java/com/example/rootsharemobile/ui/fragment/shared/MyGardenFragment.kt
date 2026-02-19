@@ -11,21 +11,14 @@ import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
 import com.example.rootsharemobile.R
 import com.example.rootsharemobile.databinding.FragmentMyGardenBinding
-import com.example.rootsharemobile.ui.adapter.GardenPlantAdapter
+import com.example.rootsharemobile.ui.adapter.GridCardAdapter
+import com.example.rootsharemobile.ui.adapter.toGridCardItem
 import com.example.rootsharemobile.ui.fragment.garden.AddEditPlantBottomSheet
 import com.example.rootsharemobile.ui.viewmodel.AuthViewModel
 import com.example.rootsharemobile.ui.viewmodel.MyGardenViewModel
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.launch
 
-/**
- * My Garden screen — shows the user's full plant collection in a 2-column grid.
- *
- * Data flow (offline-first / Room as SSOT):
- *   Fragment → ViewModel action → Repository (API + Room) → Room LiveData → UI
- *
- * The Fragment never talks to the network or Room directly.
- */
 class MyGardenFragment : Fragment() {
 
     private var _binding: FragmentMyGardenBinding? = null
@@ -34,7 +27,7 @@ class MyGardenFragment : Fragment() {
     private val gardenViewModel: MyGardenViewModel by activityViewModels()
     private val authViewModel: AuthViewModel by activityViewModels()
 
-    private lateinit var gardenAdapter: GardenPlantAdapter
+    private lateinit var gridAdapter: GridCardAdapter
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -55,20 +48,16 @@ class MyGardenFragment : Fragment() {
         fetchInitialData()
     }
 
-    // -------------------------------------------------------------------------
-    // Setup
-    // -------------------------------------------------------------------------
-
     private fun setupRecyclerView() {
-        gardenAdapter = GardenPlantAdapter { item ->
+        gridAdapter = GridCardAdapter { item ->
             val action = MyGardenFragmentDirections
-                .actionGardenToPlantDetails(item.plant.id)
+                .actionGardenToPlantDetails(item.id)
             findNavController().navigate(action)
         }
 
         binding.recyclerGarden.apply {
             layoutManager = GridLayoutManager(requireContext(), 2)
-            adapter = gardenAdapter
+            adapter = gridAdapter
         }
     }
 
@@ -94,13 +83,9 @@ class MyGardenFragment : Fragment() {
         }
     }
 
-    // -------------------------------------------------------------------------
-    // Observers
-    // -------------------------------------------------------------------------
-
     private fun observeViewModel() {
         gardenViewModel.gardenPlants.observe(viewLifecycleOwner) { plants ->
-            gardenAdapter.submitList(plants)
+            gridAdapter.submitList(plants.map { it.toGridCardItem() })
             val hasPlants = plants.isNotEmpty()
             binding.recyclerGarden.visibility = if (hasPlants) View.VISIBLE else View.GONE
             binding.layoutEmpty.visibility    = if (hasPlants) View.GONE    else View.VISIBLE
@@ -134,10 +119,6 @@ class MyGardenFragment : Fragment() {
             }
         }
     }
-
-    // -------------------------------------------------------------------------
-    // Data loading
-    // -------------------------------------------------------------------------
 
     private fun fetchInitialData() {
         lifecycleScope.launch {

@@ -28,14 +28,17 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
 
     private val tokenManager = TokenManager(application)
     private val database = AppDatabase.getInstance(application)
-    private val authRepository = AuthRepository(tokenManager, database.userDao(), database.plantDao())
+    private val authRepository = AuthRepository(tokenManager, database.userDao(), database.plantDao(), database.postDao())
 
     /** Dashboard stats from Room — reactive counts for profile mini-dashboard. */
     val plantCount: LiveData<Int> = authRepository.observeCurrentUser().switchMap { user ->
         val userId = user?.id ?: ""
         database.plantDao().observePlantCount(userId)
     }
-    val postCount: LiveData<Int> = database.postDao().observePostCount()
+    val postCount: LiveData<Int> = authRepository.observeCurrentUser().switchMap { user ->
+        val userId = user?.id ?: ""
+        database.postDao().observeUserPostCount(userId)
+    }
 
     // -------------------------------------------------------------------------
     // Sealed UI state for authentication actions

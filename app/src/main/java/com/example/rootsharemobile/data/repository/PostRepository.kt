@@ -26,9 +26,11 @@ class PostRepository(private val postDao: PostDao) {
     // Room LiveData — observed by ViewModels.
     // -------------------------------------------------------------------------
 
-    /** Emits the full post feed whenever the Room cache changes. */
     fun observeAllPosts(): LiveData<List<PostEntity>> =
         postDao.observeAllPosts()
+
+    fun observeUserPosts(userId: String): LiveData<List<PostEntity>> =
+        postDao.observeUserPosts(userId)
 
     // -------------------------------------------------------------------------
     // Network + cache operations.
@@ -65,6 +67,35 @@ class PostRepository(private val postDao: PostDao) {
                 val post = response.body()!!
                 postDao.insertPosts(listOf(post.toEntity()))
                 Result.success(post)
+            } else {
+                Result.failure(Exception(mapHttpError(response.code(), "post")))
+            }
+        } catch (e: Exception) {
+            Result.failure(Exception(mapNetworkError(e)))
+        }
+    }
+
+    suspend fun updatePost(token: String, postId: String, request: UpdatePostRequest): Result<Post> {
+        return try {
+            val response = apiService.updatePost("Bearer $token", postId, request)
+            if (response.isSuccessful && response.body() != null) {
+                val post = response.body()!!
+                postDao.insertPosts(listOf(post.toEntity()))
+                Result.success(post)
+            } else {
+                Result.failure(Exception(mapHttpError(response.code(), "post")))
+            }
+        } catch (e: Exception) {
+            Result.failure(Exception(mapNetworkError(e)))
+        }
+    }
+
+    suspend fun deletePost(token: String, postId: String): Result<Unit> {
+        return try {
+            val response = apiService.deletePost("Bearer $token", postId)
+            if (response.isSuccessful) {
+                postDao.deletePostById(postId)
+                Result.success(Unit)
             } else {
                 Result.failure(Exception(mapHttpError(response.code(), "post")))
             }

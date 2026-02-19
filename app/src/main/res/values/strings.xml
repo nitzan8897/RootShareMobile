@@ -91,6 +91,16 @@
     <string name="msg_plant_updated">Plant updated.</string>
     <string name="msg_plant_deleted">Plant removed from your garden.</string>
 
+    <!-- My Posts (profile grid) -->
+    <string name="label_my_posts">My Posts</string>
+    <string name="posts_empty_title">No posts yet</string>
+    <string name="posts_empty_subtitle">Your posts will appear here</string>
+    <string name="dialog_post_actions_title">Post Actions</string>
+    <string name="dialog_edit_post_title">Edit Post</string>
+    <string name="hint_post_content">Post content</string>
+    <string name="dialog_delete_post_title">Delete Post?</string>
+    <string name="dialog_delete_post_message">This will permanently delete this post.</string>
+
     <!-- Community screen (placeholder) -->
     <string name="label_community">Community</string>
     <string name="placeholder_community">Community posts will appear here.</string>
