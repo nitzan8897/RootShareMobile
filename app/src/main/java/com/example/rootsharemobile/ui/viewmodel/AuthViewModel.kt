@@ -35,7 +35,10 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
         val userId = user?.id ?: ""
         database.plantDao().observePlantCount(userId)
     }
-    val postCount: LiveData<Int> = database.postDao().observePostCount()
+    val postCount: LiveData<Int> = authRepository.observeCurrentUser().switchMap { user ->
+        val userId = user?.id ?: ""
+        database.postDao().observeUserPostCount(userId)
+    }
 
     // -------------------------------------------------------------------------
     // Sealed UI state for authentication actions

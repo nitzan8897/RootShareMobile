@@ -34,6 +34,10 @@ interface PostDao {
     @Query("SELECT COUNT(*) FROM posts")
     fun observePostCount(): LiveData<Int>
 
+    /** Observe current user's post count for the profile badge. */
+    @Query("SELECT COUNT(*) FROM posts WHERE userId = :userId")
+    fun observeUserPostCount(userId: String): LiveData<Int>
+
     @Query("SELECT * FROM posts WHERE id = :postId LIMIT 1")
     suspend fun getPostById(postId: String): PostEntity?
 
