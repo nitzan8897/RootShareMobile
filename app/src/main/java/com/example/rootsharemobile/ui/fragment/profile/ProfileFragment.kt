@@ -114,7 +114,7 @@ class ProfileFragment : Fragment() {
             .setTitle(R.string.dialog_post_actions_title)
             .setItems(options) { _, which ->
                 when (which) {
-                    0 -> showEditPostDialog(post)
+                    0 -> openEditPostSheet(post)
                     1 -> showDeletePostDialog(post)
                 }
             }
@@ -122,25 +122,15 @@ class ProfileFragment : Fragment() {
             .show()
     }
 
-    private fun showEditPostDialog(post: PostEntity) {
-        val editText = EditText(requireContext()).apply {
-            setText(post.content)
-            setPadding(64, 32, 64, 32)
-        }
-        AlertDialog.Builder(requireContext())
-            .setTitle(R.string.dialog_edit_post_title)
-            .setView(editText)
-            .setPositiveButton(R.string.btn_save_changes) { _, _ ->
-                val newContent = editText.text.toString().trim()
-                if (newContent.isNotBlank() && newContent != post.content) {
-                    lifecycleScope.launch {
-                        val token = authViewModel.getAccessToken() ?: return@launch
-                        postsViewModel.updatePost(token, post.id, newContent)
-                    }
-                }
-            }
-            .setNegativeButton(R.string.btn_cancel, null)
-            .show()
+    private fun openEditPostSheet(post: PostEntity) {
+        AddEditPostBottomSheet.newEditInstance(
+            postId = post.id,
+            content = post.content,
+            postType = post.postType,
+            plantId = post.plantId,
+            plantName = post.plantName,
+            imagesJson = post.imagesJson
+        ).show(parentFragmentManager, "edit_post")
     }
 
     private fun showDeletePostDialog(post: PostEntity) {
@@ -301,6 +291,11 @@ class ProfileFragment : Fragment() {
 
         binding.btnEditProfile.setOnClickListener {
             if (isEditMode) saveProfile() else enterEditMode()
+        }
+
+        binding.fabAddPost.setOnClickListener {
+            AddEditPostBottomSheet.newAddInstance()
+                .show(parentFragmentManager, "add_post")
         }
     }
 

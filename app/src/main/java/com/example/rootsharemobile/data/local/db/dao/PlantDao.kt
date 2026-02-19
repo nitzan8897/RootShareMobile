@@ -49,6 +49,10 @@ interface PlantDao {
     @Query("SELECT COUNT(*) FROM plants WHERE userId = :userId")
     fun observePlantCount(userId: String): LiveData<Int>
 
+    /** All plants for a user (simple list for dropdowns, etc.). */
+    @Query("SELECT * FROM plants WHERE userId = :userId ORDER BY name ASC")
+    fun observeUserPlants(userId: String): LiveData<List<PlantEntity>>
+
     @Query("SELECT * FROM plants WHERE id = :id LIMIT 1")
     suspend fun getPlantById(id: String): PlantEntity?
 
