@@ -20,6 +20,9 @@ data class ChatResponse(
     val participants: List<ChatParticipant> = emptyList(),
     val lastMessage: ChatLastMessage? = null,
     val unreadCount: Map<String, Int>? = null,
+    val name: String? = null,
+    val isGroup: Boolean = false,
+    val admins: List<String>? = null,
     val createdAt: String = "",
     val updatedAt: String = ""
 )
@@ -33,3 +36,16 @@ data class ChatMessageResponse(
 )
 
 data class CreateChatRequest(val userId: String)
+
+data class CreateGroupChatRequest(
+    val name: String,
+    val userIds: List<String>
+)
+
+data class RenameGroupRequest(val name: String)
+
+data class RemoveMemberRequest(val userId: String)
+
+data class MakeAdminRequest(val userId: String)
+
+data class AddMembersRequest(val userIds: List<String>)

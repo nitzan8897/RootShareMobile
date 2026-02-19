@@ -6,6 +6,7 @@ import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
@@ -76,7 +77,7 @@ class ChatRoomFragment : Fragment() {
             onBackClick?.invoke()
         }
         binding.groupInfoTapArea.setOnClickListener {
-            if (chatId.isNotEmpty() && chatViewModel.isGroupChat(chatId)) {
+            if (chatId.isNotEmpty()) {
                 showGroupInfo()
             }
         }
@@ -153,6 +154,12 @@ class ChatRoomFragment : Fragment() {
                 }
             }
         }
+    }
+
+    @Suppress("DEPRECATION")
+    override fun onResume() {
+        super.onResume()
+        activity?.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
     }
 
     override fun onDestroyView() {

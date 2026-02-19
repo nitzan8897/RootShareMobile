@@ -35,7 +35,8 @@ data class ChatPreview(
     val participantImageUrl: String? = null,
     val lastMessage: String,
     val timestamp: String,
-    val unreadCount: Int = 0
+    val unreadCount: Int = 0,
+    val isGroup: Boolean = false
 )
 
 @Composable

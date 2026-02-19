@@ -1,5 +1,8 @@
 package com.example.rootsharemobile.ui.navigation
 
+import android.view.View
+import android.view.ViewGroup
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -11,17 +14,22 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.fragment.app.FragmentContainerView
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -35,8 +43,8 @@ import com.example.rootsharemobile.ui.components.RootShareBottomNav
 import com.example.rootsharemobile.ui.screens.auth.AuthViewModel
 import com.example.rootsharemobile.ui.screens.auth.LoginScreen
 import com.example.rootsharemobile.ui.screens.auth.RegisterScreen
-import com.example.rootsharemobile.ui.screens.chat.ChatListScreen
-import com.example.rootsharemobile.ui.screens.chat.ChatRoomScreen
+import com.example.rootsharemobile.ui.screens.chat.ChatListFragment
+import com.example.rootsharemobile.ui.screens.chat.ChatRoomFragment
 import com.example.rootsharemobile.ui.screens.chat.ChatViewModel
 import com.example.rootsharemobile.ui.screens.home.HomeScreen
 import com.example.rootsharemobile.ui.screens.profile.ProfileScreen
@@ -160,8 +168,7 @@ fun RootShareNavHost(
             }
 
             composable(NavRoutes.Community.route) {
-                ChatListScreen(
-                    chatViewModel = chatViewModel,
+                ChatListFragmentScreen(
                     onChatClick = { chatId ->
                         navController.navigate(NavRoutes.ChatRoom.createRoute(chatId))
                     }
@@ -173,10 +180,14 @@ fun RootShareNavHost(
                 arguments = listOf(navArgument("chatId") { type = NavType.StringType })
             ) { backStackEntry ->
                 val chatId = backStackEntry.arguments?.getString("chatId") ?: return@composable
-                ChatRoomScreen(
+                ChatRoomFragmentScreen(
                     chatId = chatId,
-                    chatViewModel = chatViewModel,
-                    onBackClick = { navController.popBackStack() }
+                    onBackClick = {
+                        navController.popBackStack(NavRoutes.Community.route, false)
+                    },
+                    onNavigateToChat = { newChatId ->
+                        navController.navigate(NavRoutes.ChatRoom.createRoute(newChatId))
+                    }
                 )
             }
 
@@ -206,6 +217,108 @@ fun RootShareNavHost(
             }
         }
     }
+}
+
+@Composable
+private fun ChatListFragmentScreen(onChatClick: (String) -> Unit) {
+    val context = LocalContext.current
+    val fragmentManager = (context as AppCompatActivity).supportFragmentManager
+    val containerId = remember { View.generateViewId() }
+    val currentOnChatClick = rememberUpdatedState(onChatClick)
+    val tag = "ChatListFragment"
+
+    // Clean up fragment when this composable leaves composition
+    DisposableEffect(Unit) {
+        onDispose {
+            fragmentManager.findFragmentByTag(tag)?.let { fragment ->
+                fragmentManager.beginTransaction()
+                    .remove(fragment)
+                    .commitNowAllowingStateLoss()
+            }
+        }
+    }
+
+    AndroidView(
+        modifier = Modifier.fillMaxSize(),
+        factory = { ctx ->
+            // Remove any stale fragment left over from a previous composition
+            fragmentManager.findFragmentByTag(tag)?.let { stale ->
+                fragmentManager.beginTransaction()
+                    .remove(stale)
+                    .commitNowAllowingStateLoss()
+            }
+
+            FragmentContainerView(ctx).apply {
+                id = containerId
+                layoutParams = ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                )
+            }
+        },
+        update = { containerView ->
+            if (fragmentManager.findFragmentByTag(tag) == null) {
+                val fragment = ChatListFragment().apply {
+                    this.onChatClick = { chatId -> currentOnChatClick.value(chatId) }
+                }
+                fragmentManager.beginTransaction()
+                    .replace(containerView.id, fragment, tag)
+                    .commitNowAllowingStateLoss()
+            }
+        }
+    )
+}
+
+@Composable
+private fun ChatRoomFragmentScreen(chatId: String, onBackClick: () -> Unit, onNavigateToChat: (String) -> Unit) {
+    val context = LocalContext.current
+    val fragmentManager = (context as AppCompatActivity).supportFragmentManager
+    val containerId = remember { View.generateViewId() }
+    val currentOnBackClick = rememberUpdatedState(onBackClick)
+    val currentOnNavigateToChat = rememberUpdatedState(onNavigateToChat)
+    val tag = "ChatRoomFragment_$chatId"
+
+    // Clean up fragment when this composable leaves composition or chatId changes
+    DisposableEffect(chatId) {
+        onDispose {
+            fragmentManager.findFragmentByTag(tag)?.let { fragment ->
+                fragmentManager.beginTransaction()
+                    .remove(fragment)
+                    .commitNowAllowingStateLoss()
+            }
+        }
+    }
+
+    AndroidView(
+        modifier = Modifier.fillMaxSize(),
+        factory = { ctx ->
+            fragmentManager.findFragmentByTag(tag)?.let { stale ->
+                fragmentManager.beginTransaction()
+                    .remove(stale)
+                    .commitNowAllowingStateLoss()
+            }
+
+            FragmentContainerView(ctx).apply {
+                id = containerId
+                layoutParams = ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                )
+            }
+        },
+        update = { containerView ->
+            if (fragmentManager.findFragmentByTag(tag) == null) {
+                val fragment = ChatRoomFragment().apply {
+                    setChatId(chatId)
+                    this.onBackClick = { currentOnBackClick.value() }
+                    this.onNavigateToChat = { newChatId -> currentOnNavigateToChat.value(newChatId) }
+                }
+                fragmentManager.beginTransaction()
+                    .replace(containerView.id, fragment, tag)
+                    .commitNowAllowingStateLoss()
+            }
+        }
+    )
 }
 
 @Composable

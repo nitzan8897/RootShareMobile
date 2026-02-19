@@ -49,6 +49,7 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+        viewBinding = true
     }
 }
 
@@ -101,6 +102,12 @@ dependencies {
 
     // Socket.io
     implementation(libs.socketio.client)
+
+    // Fragment + RecyclerView + AppCompat + Material (for Fragment-based screens)
+    implementation(libs.fragment.ktx)
+    implementation(libs.recyclerview)
+    implementation(libs.appcompat)
+    implementation(libs.material)
 
     // Testing
     testImplementation(libs.junit)

@@ -53,7 +53,11 @@ data class ChatMessage(
     val id: String,
     val text: String,
     val isFromMe: Boolean,
-    val timestamp: String
+    val timestamp: String,
+    val senderName: String = "",
+    val senderInitial: String = "",
+    val isSystem: Boolean = false,
+    val senderId: String = ""
 )
 
 @OptIn(ExperimentalMaterial3Api::class)

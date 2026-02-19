@@ -8,7 +8,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
-import android.widget.EditText
 import android.widget.Toast
 import androidx.core.view.isVisible
 import androidx.fragment.app.DialogFragment
@@ -66,7 +65,6 @@ class GroupInfoDialogFragment : DialogFragment() {
 
         setupRecyclerView()
         setupCloseButton()
-        setupEditButtons()
         setupSearchToggle()
         setupActionButtons()
         observeViewModel()
@@ -75,7 +73,7 @@ class GroupInfoDialogFragment : DialogFragment() {
     private fun setupRecyclerView() {
         memberAdapter = GroupMemberAdapter(
             onMemberClick = { member -> handleMemberClick(member) },
-            onMemberLongClick = { member -> handleMemberLongClick(member) }
+            onMemberLongClick = { _ -> false }
         )
         binding.membersRecyclerView.apply {
             layoutManager = LinearLayoutManager(requireContext())
@@ -85,13 +83,6 @@ class GroupInfoDialogFragment : DialogFragment() {
 
     private fun setupCloseButton() {
         binding.closeButton.setOnClickListener { dismiss() }
-    }
-
-    private fun setupEditButtons() {
-        binding.editNameButton.setOnClickListener { showRenameDialog() }
-        binding.editAvatarButton.setOnClickListener {
-            Toast.makeText(requireContext(), "Coming soon", Toast.LENGTH_SHORT).show()
-        }
     }
 
     private fun setupSearchToggle() {
@@ -117,7 +108,6 @@ class GroupInfoDialogFragment : DialogFragment() {
 
     private fun setupActionButtons() {
         binding.leaveGroupButton.setOnClickListener { showLeaveConfirmation() }
-        binding.deleteGroupButton.setOnClickListener { showDeleteConfirmation() }
         binding.showMoreButton.setOnClickListener {
             displayedCount += PAGE_SIZE
             updateMemberList()
@@ -136,30 +126,20 @@ class GroupInfoDialogFragment : DialogFragment() {
     }
 
     private fun updateUI(chat: com.example.rootsharemobile.data.model.ChatResponse) {
-        val currentUserId = chatViewModel.getCurrentUserId() ?: ""
-        val adminList = chat.admins.orEmpty()
-        val isAdmin = currentUserId in adminList
-
         // Group info header
         val groupName = chat.name ?: "Group"
         binding.groupNameText.text = groupName
         binding.groupInitial.text = groupName.take(1).uppercase()
         binding.memberCountText.text = "${chat.participants.size} members"
 
-        // Admin-only controls
-        binding.editNameButton.isVisible = isAdmin
-        binding.editAvatarButton.isVisible = isAdmin
-        binding.deleteGroupButton.isVisible = isAdmin
-
-        // Build member list: admins first (A-Z), then non-admins (A-Z)
+        // Build member list sorted A-Z
         allMembers = chat.participants.map { p ->
             GroupMemberItem(
                 userId = p.id,
                 username = p.username,
-                profileImageUrl = p.profileImageUrl,
-                isAdmin = p.id in adminList
+                profileImageUrl = p.profileImageUrl
             )
-        }.sortedWith(compareByDescending<GroupMemberItem> { it.isAdmin }.thenBy { it.username.lowercase() })
+        }.sortedBy { it.username.lowercase() }
 
         updateMemberList()
     }
@@ -186,92 +166,6 @@ class GroupInfoDialogFragment : DialogFragment() {
         }
     }
 
-    private fun handleMemberLongClick(member: GroupMemberItem): Boolean {
-        val currentUserId = chatViewModel.getCurrentUserId() ?: ""
-        val chat = chatViewModel.currentChatDetail.value ?: return false
-        val isAdmin = currentUserId in chat.admins.orEmpty()
-
-        if (!isAdmin || member.userId == currentUserId) return false
-
-        val options = arrayOf("Make Admin", "Remove from Group")
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle(member.username)
-            .setItems(options) { _, which ->
-                when (which) {
-                    0 -> showMakeAdminConfirmation(member)
-                    1 -> showRemoveMemberConfirmation(member)
-                }
-            }
-            .show()
-        return true
-    }
-
-    private fun showRenameDialog() {
-        val editText = EditText(requireContext()).apply {
-            setText(binding.groupNameText.text)
-            setPadding(64, 32, 64, 32)
-            inputType = android.text.InputType.TYPE_CLASS_TEXT
-        }
-
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle("Rename Group")
-            .setView(editText)
-            .setPositiveButton("Rename") { _, _ ->
-                val newName = editText.text.toString().trim()
-                if (newName.isNotBlank()) {
-                    chatViewModel.renameGroup(chatId, newName) { success ->
-                        if (isAdded) {
-                            Toast.makeText(
-                                requireContext(),
-                                if (success) "Group renamed" else "Failed to rename group",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    }
-                }
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
-    }
-
-    private fun showMakeAdminConfirmation(member: GroupMemberItem) {
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle("Make Admin")
-            .setMessage("Make ${member.username} an admin?")
-            .setPositiveButton("Yes") { _, _ ->
-                chatViewModel.makeAdmin(chatId, member.userId) { success ->
-                    if (isAdded) {
-                        Toast.makeText(
-                            requireContext(),
-                            if (success) "${member.username} is now an admin" else "Failed to make admin",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                }
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
-    }
-
-    private fun showRemoveMemberConfirmation(member: GroupMemberItem) {
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle("Remove Member")
-            .setMessage("Remove ${member.username} from the group?")
-            .setPositiveButton("Remove") { _, _ ->
-                chatViewModel.removeMember(chatId, member.userId) { success ->
-                    if (isAdded) {
-                        Toast.makeText(
-                            requireContext(),
-                            if (success) "${member.username} removed" else "Failed to remove member",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                }
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
-    }
-
     private fun showLeaveConfirmation() {
         MaterialAlertDialogBuilder(requireContext())
             .setTitle("Leave Group")
@@ -283,24 +177,6 @@ class GroupInfoDialogFragment : DialogFragment() {
                         onGroupLeft?.invoke()
                     } else if (isAdded) {
                         Toast.makeText(requireContext(), "Failed to leave group", Toast.LENGTH_SHORT).show()
-                    }
-                }
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
-    }
-
-    private fun showDeleteConfirmation() {
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle("Delete Group")
-            .setMessage("Are you sure you want to delete this group? This cannot be undone.")
-            .setPositiveButton("Delete") { _, _ ->
-                chatViewModel.deleteGroup(chatId) { success ->
-                    if (success) {
-                        dismiss()
-                        onGroupDeleted?.invoke()
-                    } else if (isAdded) {
-                        Toast.makeText(requireContext(), "Failed to delete group", Toast.LENGTH_SHORT).show()
                     }
                 }
             }
