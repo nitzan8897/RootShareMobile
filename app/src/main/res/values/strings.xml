@@ -101,6 +101,23 @@
     <string name="dialog_delete_post_title">Delete Post?</string>
     <string name="dialog_delete_post_message">This will permanently delete this post.</string>
 
+    <!-- Add / Edit post bottom sheet -->
+    <string name="title_add_post">New Post</string>
+    <string name="title_edit_post">Edit Post</string>
+    <string name="label_post_content">Content</string>
+    <string name="hint_post_content_placeholder">What\'s happening in your garden?</string>
+    <string name="label_post_type">Post Type</string>
+    <string name="label_linked_plant">Link to Plant (optional)</string>
+    <string name="hint_no_plant">None</string>
+    <string name="label_post_images">Image URLs (one per line)</string>
+    <string name="hint_post_images">https://…</string>
+    <string name="hint_post_images_optional">Leave empty for a text-only post</string>
+    <string name="btn_create_post">Create Post</string>
+    <string name="fab_add_post">New Post</string>
+    <string name="msg_post_created">Post created!</string>
+    <string name="msg_post_updated">Post updated.</string>
+    <string name="msg_post_deleted">Post deleted.</string>
+
     <!-- Community screen (placeholder) -->
     <string name="label_community">Community</string>
     <string name="placeholder_community">Community posts will appear here.</string>

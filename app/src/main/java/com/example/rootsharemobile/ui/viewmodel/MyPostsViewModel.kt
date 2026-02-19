@@ -8,7 +8,10 @@ import androidx.lifecycle.switchMap
 import androidx.lifecycle.viewModelScope
 import com.example.rootsharemobile.data.local.TokenManager
 import com.example.rootsharemobile.data.local.db.AppDatabase
+import com.example.rootsharemobile.data.local.db.entity.PlantEntity
 import com.example.rootsharemobile.data.local.db.entity.PostEntity
+import com.example.rootsharemobile.data.model.CreatePostRequest
+import com.example.rootsharemobile.data.model.PostType
 import com.example.rootsharemobile.data.model.UpdatePostRequest
 import com.example.rootsharemobile.data.repository.PostRepository
 import kotlinx.coroutines.launch
@@ -49,6 +52,12 @@ class MyPostsViewModel(application: Application) : AndroidViewModel(application)
             postRepository.observeUserPosts(userId)
         }
 
+    /** User's plants for the "link to plant" dropdown in the post form. */
+    val userPlants: LiveData<List<PlantEntity>> =
+        _currentUserId.switchMap { userId ->
+            database.plantDao().observeUserPlants(userId)
+        }
+
     fun loadPosts(token: String) {
         if (_uiState.value == PostsUiState.Loading) return
         _uiState.value = PostsUiState.Loading
@@ -82,10 +91,50 @@ class MyPostsViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    fun updatePost(token: String, postId: String, content: String) {
+    fun createPost(
+        token: String,
+        content: String,
+        type: PostType,
+        plantId: String?,
+        images: List<String>
+    ) {
         _operationState.value = OperationState.Loading
         viewModelScope.launch {
-            val request = UpdatePostRequest(content = content)
+            val request = CreatePostRequest(
+                plantId = plantId,
+                type = type,
+                content = content,
+                images = images.ifEmpty { null }
+            )
+            val result = postRepository.createPost(token, request)
+            result.fold(
+                onSuccess = {
+                    _operationState.value = OperationState.Success
+                    _snackMessage.value = "Post created!"
+                },
+                onFailure = {
+                    _operationState.value = OperationState.Error(it.message ?: "Could not create post.")
+                }
+            )
+        }
+    }
+
+    fun updatePost(
+        token: String,
+        postId: String,
+        content: String,
+        type: PostType? = null,
+        plantId: String? = null,
+        images: List<String>? = null
+    ) {
+        _operationState.value = OperationState.Loading
+        viewModelScope.launch {
+            val request = UpdatePostRequest(
+                content = content,
+                type = type,
+                plantId = plantId,
+                images = images
+            )
             val result = postRepository.updatePost(token, postId, request)
             result.fold(
                 onSuccess = {
