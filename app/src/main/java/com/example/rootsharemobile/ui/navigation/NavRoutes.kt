@@ -2,6 +2,8 @@ package com.example.rootsharemobile.ui.navigation
 
 /**
  * Navigation routes for the app.
+ * Chat navigation (ChatList → ChatRoom) is handled by chat_nav_graph.xml with SafeArgs,
+ * not by the Compose NavHost.
  */
 sealed class NavRoutes(val route: String) {
     data object Login : NavRoutes("login")
@@ -11,7 +13,4 @@ sealed class NavRoutes(val route: String) {
     data object Community : NavRoutes("community")
     data object Gallery : NavRoutes("gallery")
     data object Profile : NavRoutes("profile")
-    data object ChatRoom : NavRoutes("chat_room/{chatId}") {
-        fun createRoute(chatId: String) = "chat_room/$chatId"
-    }
 }

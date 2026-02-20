@@ -42,11 +42,18 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
+    private val _isInChatRoom = MutableStateFlow(false)
+    val isInChatRoom: StateFlow<Boolean> = _isInChatRoom
+
+    fun setInChatRoom(value: Boolean) {
+        _isInChatRoom.value = value
+    }
+
     private var currentChatId: String? = null
     private var currentUserId: String? = null
     private var currentUserName: String? = null
     private var accessToken: String? = null
-    private var isConnected = false
+    private var listenersRegistered = false   // guards against duplicate socket handlers
     private var currentChatIsGroup = false
 
     private var chatResponseMap = mutableMapOf<String, ChatResponse>()
@@ -173,23 +180,32 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun connect() {
-        if (isConnected) return
         viewModelScope.launch {
             accessToken = tokenManager.getAccessToken()
             val user = tokenManager.getUser()
             currentUserId = user?.id
             currentUserName = user?.username
-            val token = accessToken
-            if (token != null) {
-                SocketManager.connect(token)
+            val token = accessToken ?: return@launch
+
+            // Register event handlers only once — prevents duplicate message/typing callbacks
+            // if connect() is called again after a disconnect.
+            if (!listenersRegistered) {
                 SocketManager.on("message", messageListener)
                 SocketManager.on("typing", typingListener)
                 SocketManager.on("member_added", memberAddedListener)
                 SocketManager.on("member_removed", memberRemovedListener)
                 SocketManager.on("group_renamed", groupRenamedListener)
-                isConnected = true
-                loadChats()
+                listenersRegistered = true
             }
+
+            // Always attempt a socket connection when not already connected.
+            // Using SocketManager.isConnected instead of a local flag means this works
+            // even after a disconnect or a failed first attempt (regular-user offline fix).
+            if (!SocketManager.isConnected) {
+                SocketManager.connect(token)
+            }
+
+            loadChats()
         }
     }
 
@@ -540,7 +556,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         SocketManager.off("member_removed", memberRemovedListener)
         SocketManager.off("group_renamed", groupRenamedListener)
         SocketManager.disconnect()
-        isConnected = false
+        listenersRegistered = false
     }
 
     companion object {

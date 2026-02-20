@@ -13,7 +13,10 @@ import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.navigation.fragment.findNavController
+import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.rootsharemobile.R
 import com.example.rootsharemobile.databinding.FragmentChatRoomBinding
 import com.example.rootsharemobile.ui.screens.chat.adapter.MessageAdapter
 import kotlinx.coroutines.launch
@@ -24,12 +27,9 @@ class ChatRoomFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val chatViewModel: ChatViewModel by activityViewModels()
+    private val args: ChatRoomFragmentArgs by navArgs()
 
     private lateinit var messageAdapter: MessageAdapter
-    private var chatId: String = ""
-
-    var onBackClick: (() -> Unit)? = null
-    var onNavigateToChat: ((chatId: String) -> Unit)? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -47,21 +47,26 @@ class ChatRoomFragment : Fragment() {
         setupToolbar()
         observeViewModel()
 
-        // Join room
-        if (chatId.isNotEmpty()) {
-            chatViewModel.joinRoom(chatId)
-            updateParticipantName()
-        }
+        chatViewModel.joinRoom(args.chatId)
+        updateParticipantName()
     }
 
-    fun setChatId(id: String) {
-        chatId = id
+    override fun onStart() {
+        super.onStart()
+        chatViewModel.setInChatRoom(true)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        chatViewModel.setInChatRoom(false)
     }
 
     private fun setupRecyclerView() {
         messageAdapter = MessageAdapter { senderId ->
             chatViewModel.createNewChat(senderId) { newChatId ->
-                if (newChatId != null) onNavigateToChat?.invoke(newChatId)
+                if (newChatId != null) {
+                    navigateToChat(newChatId)
+                }
             }
         }
         binding.messagesRecyclerView.apply {
@@ -74,21 +79,32 @@ class ChatRoomFragment : Fragment() {
 
     private fun setupToolbar() {
         binding.backButton.setOnClickListener {
-            onBackClick?.invoke()
+            // Pop back to the chat list (removes all chat room entries from stack)
+            findNavController().popBackStack(R.id.chatListFragment, false)
         }
         binding.groupInfoTapArea.setOnClickListener {
-            if (chatId.isNotEmpty()) {
-                showGroupInfo()
-            }
+            showGroupInfo()
         }
     }
 
     private fun showGroupInfo() {
-        val dialog = GroupInfoDialogFragment.newInstance(chatId)
-        dialog.onNavigateToChat = { newChatId -> onNavigateToChat?.invoke(newChatId) }
-        dialog.onGroupLeft = { onBackClick?.invoke() }
-        dialog.onGroupDeleted = { onBackClick?.invoke() }
+        val dialog = GroupInfoDialogFragment.newInstance(args.chatId)
+        dialog.onNavigateToChat = { newChatId ->
+            navigateToChat(newChatId)
+        }
+        dialog.onGroupLeft = {
+            findNavController().popBackStack(R.id.chatListFragment, false)
+        }
+        dialog.onGroupDeleted = {
+            findNavController().popBackStack(R.id.chatListFragment, false)
+        }
         dialog.show(childFragmentManager, "GroupInfoDialog")
+    }
+
+    private fun navigateToChat(chatId: String) {
+        findNavController().navigate(
+            ChatRoomFragmentDirections.actionChatRoomFragmentToChatRoomFragment(chatId)
+        )
     }
 
     private fun setupInputBar() {
@@ -116,7 +132,7 @@ class ChatRoomFragment : Fragment() {
     }
 
     private fun updateParticipantName() {
-        val name = chatViewModel.getParticipantName(chatId)
+        val name = chatViewModel.getParticipantName(args.chatId)
         binding.participantName.text = name
         binding.avatarInitial.text = name.take(1).uppercase()
     }
@@ -124,7 +140,6 @@ class ChatRoomFragment : Fragment() {
     private fun observeViewModel() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                // Observe messages
                 launch {
                     chatViewModel.messages.collect { messages ->
                         messageAdapter.submitList(messages) {
@@ -137,19 +152,15 @@ class ChatRoomFragment : Fragment() {
                     }
                 }
 
-                // Observe typing indicator
                 launch {
                     chatViewModel.isTyping.collect { isTyping ->
                         binding.typingIndicator.isVisible = isTyping
                     }
                 }
 
-                // Observe chats to update participant name when loaded
                 launch {
                     chatViewModel.chats.collect {
-                        if (chatId.isNotEmpty()) {
-                            updateParticipantName()
-                        }
+                        updateParticipantName()
                     }
                 }
             }

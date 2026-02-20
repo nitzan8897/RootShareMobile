@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.navigation.safeargs.kotlin)
 }
 
 val localProperties = Properties().apply {
@@ -92,8 +93,9 @@ dependencies {
     // DataStore (for token storage)
     implementation(libs.datastore.preferences)
 
-    // Navigation Compose
+    // Navigation Compose + Fragment (NavHostFragment + SafeArgs)
     implementation(libs.navigation.compose)
+    implementation(libs.navigation.fragment)
 
     // Google Sign-In (Credential Manager)
     implementation(libs.credentials)

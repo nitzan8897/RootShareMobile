@@ -15,6 +15,7 @@ import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.rootsharemobile.R
 import com.example.rootsharemobile.data.remote.ConnectionStatus
@@ -32,8 +33,6 @@ class ChatListFragment : Fragment() {
     private lateinit var chatAdapter: ChatAdapter
     private var searchQuery: String = ""
 
-    var onChatClick: ((chatId: String) -> Unit)? = null
-
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -50,16 +49,22 @@ class ChatListFragment : Fragment() {
         setupFab()
         observeViewModel()
         chatViewModel.connect()
+    }
 
-        // Seed sample data for testing when no chats loaded yet
-        if (chatViewModel.chats.value.isEmpty()) {
-            chatAdapter.submitList(sampleChats)
-        }
+    override fun onStart() {
+        super.onStart()
+        chatViewModel.setInChatRoom(false)
+    }
+
+    private fun navigateToChat(chatId: String) {
+        findNavController().navigate(
+            ChatListFragmentDirections.actionChatListFragmentToChatRoomFragment(chatId)
+        )
     }
 
     private fun setupRecyclerView() {
         chatAdapter = ChatAdapter { chatId ->
-            onChatClick?.invoke(chatId)
+            navigateToChat(chatId)
         }
         binding.chatRecyclerView.apply {
             layoutManager = LinearLayoutManager(requireContext())
@@ -78,7 +83,7 @@ class ChatListFragment : Fragment() {
                         val dialog = NewChatDialogFragment()
                         dialog.onChatCreated = { chatId ->
                             chatViewModel.refreshChats()
-                            onChatClick?.invoke(chatId)
+                            navigateToChat(chatId)
                         }
                         dialog.show(childFragmentManager, "NewChatDialog")
                         true
@@ -87,7 +92,7 @@ class ChatListFragment : Fragment() {
                         val dialog = NewGroupChatDialogFragment()
                         dialog.onGroupCreated = { chatId ->
                             chatViewModel.refreshChats()
-                            onChatClick?.invoke(chatId)
+                            navigateToChat(chatId)
                         }
                         dialog.show(childFragmentManager, "NewGroupChatDialog")
                         true

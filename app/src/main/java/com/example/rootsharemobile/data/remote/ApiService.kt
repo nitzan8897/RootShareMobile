@@ -1,6 +1,5 @@
 package com.example.rootsharemobile.data.remote
 
-import com.example.rootsharemobile.data.model.AddMembersRequest
 import com.example.rootsharemobile.data.model.AuthResponse
 import com.example.rootsharemobile.data.model.ChatMessageResponse
 import com.example.rootsharemobile.data.model.ChatResponse

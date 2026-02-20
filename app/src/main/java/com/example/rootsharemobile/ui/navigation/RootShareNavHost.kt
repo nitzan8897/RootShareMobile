@@ -20,7 +20,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,26 +31,24 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.fragment.app.FragmentContainerView
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
+import androidx.navigation.fragment.NavHostFragment
+import com.example.rootsharemobile.R
 import com.example.rootsharemobile.data.auth.GoogleAuthHelper
 import com.example.rootsharemobile.ui.components.RootShareBottomNav
 import com.example.rootsharemobile.ui.screens.auth.AuthViewModel
 import com.example.rootsharemobile.ui.screens.auth.LoginScreen
 import com.example.rootsharemobile.ui.screens.auth.RegisterScreen
-import com.example.rootsharemobile.ui.screens.chat.ChatListFragment
-import com.example.rootsharemobile.ui.screens.chat.ChatRoomFragment
 import com.example.rootsharemobile.ui.screens.chat.ChatViewModel
 import com.example.rootsharemobile.ui.screens.home.HomeScreen
 import com.example.rootsharemobile.ui.screens.profile.ProfileScreen
 
 /**
  * Main navigation host for the app.
- * Handles navigation between all screens with authentication flow.
+ * Chat tab uses a Fragment NavHostFragment backed by chat_nav_graph.xml + SafeArgs.
  */
 @Composable
 fun RootShareNavHost(
@@ -64,39 +61,30 @@ fun RootShareNavHost(
 
     val isLoggedIn by authViewModel.isLoggedIn.collectAsState()
     val currentUser by authViewModel.currentUser.collectAsState()
+    val isInChatRoom by chatViewModel.isInChatRoom.collectAsState()
 
-    // Track initial auth check
     var isCheckingAuth by remember { mutableStateOf(true) }
 
-    // Wait for auth state to be determined
     LaunchedEffect(Unit) {
-        // Give time for DataStore to load
         kotlinx.coroutines.delay(100)
         isCheckingAuth = false
     }
 
-    // Show loading while checking auth state
     if (isCheckingAuth) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
         }
         return
     }
 
-    // Determine start destination based on auth state
     val startDestination = if (isLoggedIn) NavRoutes.Home.route else NavRoutes.Login.route
 
-    // Get current route to determine if bottom nav should be shown
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    // Routes where bottom nav should be hidden
     val authRoutes = listOf(NavRoutes.Login.route, NavRoutes.Register.route)
-    val hiddenNavRoutes = authRoutes + listOf(NavRoutes.ChatRoom.route)
-    val showBottomNav = currentRoute !in hiddenNavRoutes && isLoggedIn
+    // Bottom nav hidden on auth screens OR when inside a chat room (Fragment nav)
+    val showBottomNav = currentRoute !in authRoutes && isLoggedIn && !isInChatRoom
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -121,7 +109,6 @@ fun RootShareNavHost(
             startDestination = startDestination,
             modifier = Modifier.padding(innerPadding)
         ) {
-            // Auth screens
             composable(NavRoutes.Login.route) {
                 LoginScreen(
                     viewModel = authViewModel,
@@ -156,39 +143,17 @@ fun RootShareNavHost(
                 )
             }
 
-            // Main app screens
             composable(NavRoutes.Home.route) {
-                HomeScreen(
-                    getToken = { authViewModel.getAccessToken() }
-                )
+                HomeScreen(getToken = { authViewModel.getAccessToken() })
             }
 
             composable(NavRoutes.MyGarden.route) {
                 PlaceholderScreen(title = "My Garden", subtitle = "Coming soon...")
             }
 
+            // Community tab: self-contained Fragment NavHost using chat_nav_graph.xml + SafeArgs
             composable(NavRoutes.Community.route) {
-                ChatListFragmentScreen(
-                    onChatClick = { chatId ->
-                        navController.navigate(NavRoutes.ChatRoom.createRoute(chatId))
-                    }
-                )
-            }
-
-            composable(
-                route = NavRoutes.ChatRoom.route,
-                arguments = listOf(navArgument("chatId") { type = NavType.StringType })
-            ) { backStackEntry ->
-                val chatId = backStackEntry.arguments?.getString("chatId") ?: return@composable
-                ChatRoomFragmentScreen(
-                    chatId = chatId,
-                    onBackClick = {
-                        navController.popBackStack(NavRoutes.Community.route, false)
-                    },
-                    onNavigateToChat = { newChatId ->
-                        navController.navigate(NavRoutes.ChatRoom.createRoute(newChatId))
-                    }
-                )
+                ChatNavScreen()
             }
 
             composable(NavRoutes.Gallery.route) {
@@ -209,7 +174,6 @@ fun RootShareNavHost(
         }
     }
 
-    // Handle auth state changes - navigate to login if logged out
     LaunchedEffect(isLoggedIn) {
         if (!isLoggedIn && currentRoute !in authRoutes) {
             navController.navigate(NavRoutes.Login.route) {
@@ -219,19 +183,22 @@ fun RootShareNavHost(
     }
 }
 
+/**
+ * Embeds a NavHostFragment driven by chat_nav_graph.xml inside a Compose AndroidView.
+ * Navigation between ChatListFragment and ChatRoomFragment is handled by the Fragment
+ * NavController with SafeArgs — no Compose navController involvement.
+ */
 @Composable
-private fun ChatListFragmentScreen(onChatClick: (String) -> Unit) {
+private fun ChatNavScreen() {
     val context = LocalContext.current
-    val fragmentManager = (context as AppCompatActivity).supportFragmentManager
+    val activity = context as AppCompatActivity
     val containerId = remember { View.generateViewId() }
-    val currentOnChatClick = rememberUpdatedState(onChatClick)
-    val tag = "ChatListFragment"
+    val tag = "ChatNavHostFragment"
 
-    // Clean up fragment when this composable leaves composition
     DisposableEffect(Unit) {
         onDispose {
-            fragmentManager.findFragmentByTag(tag)?.let { fragment ->
-                fragmentManager.beginTransaction()
+            activity.supportFragmentManager.findFragmentByTag(tag)?.let { fragment ->
+                activity.supportFragmentManager.beginTransaction()
                     .remove(fragment)
                     .commitNowAllowingStateLoss()
             }
@@ -241,9 +208,9 @@ private fun ChatListFragmentScreen(onChatClick: (String) -> Unit) {
     AndroidView(
         modifier = Modifier.fillMaxSize(),
         factory = { ctx ->
-            // Remove any stale fragment left over from a previous composition
-            fragmentManager.findFragmentByTag(tag)?.let { stale ->
-                fragmentManager.beginTransaction()
+            // Remove any stale fragment from a previous composition
+            activity.supportFragmentManager.findFragmentByTag(tag)?.let { stale ->
+                activity.supportFragmentManager.beginTransaction()
                     .remove(stale)
                     .commitNowAllowingStateLoss()
             }
@@ -256,65 +223,11 @@ private fun ChatListFragmentScreen(onChatClick: (String) -> Unit) {
                 )
             }
         },
-        update = { containerView ->
-            if (fragmentManager.findFragmentByTag(tag) == null) {
-                val fragment = ChatListFragment().apply {
-                    this.onChatClick = { chatId -> currentOnChatClick.value(chatId) }
-                }
-                fragmentManager.beginTransaction()
-                    .replace(containerView.id, fragment, tag)
-                    .commitNowAllowingStateLoss()
-            }
-        }
-    )
-}
-
-@Composable
-private fun ChatRoomFragmentScreen(chatId: String, onBackClick: () -> Unit, onNavigateToChat: (String) -> Unit) {
-    val context = LocalContext.current
-    val fragmentManager = (context as AppCompatActivity).supportFragmentManager
-    val containerId = remember { View.generateViewId() }
-    val currentOnBackClick = rememberUpdatedState(onBackClick)
-    val currentOnNavigateToChat = rememberUpdatedState(onNavigateToChat)
-    val tag = "ChatRoomFragment_$chatId"
-
-    // Clean up fragment when this composable leaves composition or chatId changes
-    DisposableEffect(chatId) {
-        onDispose {
-            fragmentManager.findFragmentByTag(tag)?.let { fragment ->
-                fragmentManager.beginTransaction()
-                    .remove(fragment)
-                    .commitNowAllowingStateLoss()
-            }
-        }
-    }
-
-    AndroidView(
-        modifier = Modifier.fillMaxSize(),
-        factory = { ctx ->
-            fragmentManager.findFragmentByTag(tag)?.let { stale ->
-                fragmentManager.beginTransaction()
-                    .remove(stale)
-                    .commitNowAllowingStateLoss()
-            }
-
-            FragmentContainerView(ctx).apply {
-                id = containerId
-                layoutParams = ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.MATCH_PARENT
-                )
-            }
-        },
-        update = { containerView ->
-            if (fragmentManager.findFragmentByTag(tag) == null) {
-                val fragment = ChatRoomFragment().apply {
-                    setChatId(chatId)
-                    this.onBackClick = { currentOnBackClick.value() }
-                    this.onNavigateToChat = { newChatId -> currentOnNavigateToChat.value(newChatId) }
-                }
-                fragmentManager.beginTransaction()
-                    .replace(containerView.id, fragment, tag)
+        update = { _ ->
+            if (activity.supportFragmentManager.findFragmentByTag(tag) == null) {
+                val navHostFragment = NavHostFragment.create(R.navigation.chat_nav_graph)
+                activity.supportFragmentManager.beginTransaction()
+                    .replace(containerId, navHostFragment, tag)
                     .commitNowAllowingStateLoss()
             }
         }
@@ -323,16 +236,9 @@ private fun ChatRoomFragmentScreen(chatId: String, onBackClick: () -> Unit, onNa
 
 @Composable
 private fun PlaceholderScreen(title: String, subtitle: String = "") {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = title,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold
-            )
+            Text(text = title, fontSize = 24.sp, fontWeight = FontWeight.Bold)
             if (subtitle.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
