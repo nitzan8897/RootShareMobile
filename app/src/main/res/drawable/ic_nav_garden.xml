@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="?attr/colorControlNormal">
+
+    <!-- Flower head (filled circle at top) -->
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M12,2C9.79,2 8,3.79 8,6C8,8.21 9.79,10 12,10C14.21,10 16,8.21 16,6C16,3.79 14.21,2 12,2Z" />
+
+    <!-- Left leaf -->
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M11,14C8,13 7,10 7,9C7,8 9,8 11,9L11,14Z" />
+
+    <!-- Right leaf -->
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M13,14C16,13 17,10 17,9C17,8 15,8 13,9L13,14Z" />
+
+    <!-- Stem -->
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M11,9H13V16H11Z" />
+
+    <!-- Pot rim -->
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M8,15H16V17H8Z" />
+
+    <!-- Pot body -->
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M9,17H15L14,22H10Z" />
+
+</vector>

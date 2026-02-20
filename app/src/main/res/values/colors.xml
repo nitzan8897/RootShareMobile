@@ -1,22 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="purple_200">#FFBB86FC</color>
-    <color name="purple_500">#FF6200EE</color>
-    <color name="purple_700">#FF3700B3</color>
-    <color name="teal_200">#FF03DAC5</color>
-    <color name="teal_700">#FF018786</color>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
+    <!-- Emerald primary palette -->
+    <color name="emerald_300">#6EE7B7</color>
+    <color name="emerald_400">#34D399</color>
+    <color name="emerald_500">#10B981</color>
+    <color name="emerald_600">#059669</color>
+    <color name="emerald_700">#047857</color>
 
-    <!-- Chat theme colors (matching Compose Color.kt) -->
-    <color name="emerald_500">#FF10B981</color>
-    <color name="emerald_600">#FF059669</color>
-    <color name="gray_50">#FFF9FAFB</color>
-    <color name="gray_100">#FFF3F4F6</color>
-    <color name="gray_200">#FFE5E7EB</color>
-    <color name="gray_400">#FF9CA3AF</color>
-    <color name="gray_500">#FF6B7280</color>
-    <color name="gray_800">#FF1F2937</color>
-    <color name="gray_900">#FF111827</color>
-    <color name="red_500">#FFEF4444</color>
+    <!-- Neutral grey palette -->
+    <color name="gray_50">#F9FAFB</color>
+    <color name="gray_100">#F3F4F6</color>
+    <color name="gray_200">#E5E7EB</color>
+    <color name="gray_300">#D1D5DB</color>
+    <color name="gray_400">#9CA3AF</color>
+    <color name="gray_500">#6B7280</color>
+    <color name="gray_600">#4B5563</color>
+    <color name="gray_700">#374151</color>
+    <color name="gray_800">#1F2937</color>
+    <color name="gray_900">#111827</color>
+
+    <!-- Semantic aliases -->
+    <color name="colorPrimary">@color/emerald_500</color>
+    <color name="colorPrimaryDark">@color/emerald_700</color>
+    <color name="colorAccent">@color/emerald_400</color>
+    <color name="colorBackground">#FFFFFF</color>
+    <color name="colorSurface">#FFFFFF</color>
+    <color name="colorOnPrimary">#FFFFFF</color>
+    <color name="colorTextPrimary">@color/gray_900</color>
+    <color name="colorTextSecondary">@color/gray_500</color>
+    <color name="colorDivider">@color/gray_200</color>
+    <color name="colorError">#EF4444</color>
+
+    <!-- Status badge colors -->
+    <color name="badge_active_bg">#DCFCE7</color>
+    <color name="badge_active_text">#166534</color>
+    <color name="badge_dead_bg">#FEE2E2</color>
+    <color name="badge_dead_text">#991B1B</color>
+    <color name="badge_gifted_bg">#FEF3C7</color>
+    <color name="badge_gifted_text">#92400E</color>
+
+    <!-- Utility -->
+    <color name="white">#FFFFFFFF</color>
+    <color name="red_500">#EF4444</color>
+    <color name="black">#FF000000</color>
+    <color name="transparent">#00000000</color>
 </resources>

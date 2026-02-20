@@ -15,19 +15,23 @@ import com.example.rootsharemobile.data.model.LoginRequest
 import com.example.rootsharemobile.data.model.Plant
 import com.example.rootsharemobile.data.model.PlantStatus
 import com.example.rootsharemobile.data.model.Post
+import com.example.rootsharemobile.data.model.Species
 import com.example.rootsharemobile.data.model.RefreshTokenResponse
 import com.example.rootsharemobile.data.model.RegisterRequest
 import com.example.rootsharemobile.data.model.UpdatePlantRequest
 import com.example.rootsharemobile.data.model.UpdatePostRequest
 import com.example.rootsharemobile.data.model.User
+import okhttp3.MultipartBody
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.HTTP
 import retrofit2.http.Header
+import retrofit2.http.Multipart
 import retrofit2.http.PATCH
 import retrofit2.http.POST
+import retrofit2.http.Part
 import retrofit2.http.Path
 import retrofit2.http.Query
 
@@ -86,6 +90,38 @@ interface ApiService {
     suspend fun googleAuth(
         @Body request: GoogleTokenRequest
     ): Response<AuthResponse>
+
+    // ==================== USERS ====================
+
+    /**
+     * Update the current user's profile (username, etc.).
+     */
+    @retrofit2.http.PUT("users/profile")
+    suspend fun updateProfile(
+        @Header("Authorization") token: String,
+        @Body body: Map<String, String>
+    ): Response<User>
+
+    /**
+     * Upload a profile image (multipart).
+     * Returns the updated User with localProfileImageUrl set.
+     */
+    @Multipart
+    @POST("users/profile/image")
+    suspend fun uploadProfileImage(
+        @Header("Authorization") token: String,
+        @Part image: MultipartBody.Part
+    ): Response<User>
+
+    // ==================== SPECIES ====================
+
+    /**
+     * Get all approved species.
+     */
+    @GET("species")
+    suspend fun getSpecies(
+        @Header("Authorization") token: String
+    ): Response<List<Species>>
 
     // ==================== PLANTS ====================
 

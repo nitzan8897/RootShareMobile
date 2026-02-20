@@ -3,8 +3,8 @@ import java.util.Properties
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
-    alias(libs.plugins.navigation.safeargs.kotlin)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.navigation.safeargs)
 }
 
 val localProperties = Properties().apply {
@@ -40,29 +40,48 @@ android {
             )
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+
     kotlinOptions {
         jvmTarget = "11"
     }
+
     buildFeatures {
-        compose = true
-        buildConfig = true
         viewBinding = true
+        buildConfig = true
     }
 }
 
 dependencies {
+    // AndroidX Core
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.activity.compose)
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.compose.ui)
-    implementation(libs.androidx.compose.ui.graphics)
-    implementation(libs.androidx.compose.ui.tooling.preview)
-    implementation(libs.androidx.compose.material3)
+
+    // AppCompat & Material Design
+    implementation(libs.appcompat)
+    implementation(libs.material)
+
+    // Activity & Fragment
+    implementation(libs.activity.ktx)
+    implementation(libs.fragment.ktx)
+
+    // XML Layouts
+    implementation(libs.constraintlayout)
+    implementation(libs.recyclerview)
+    implementation(libs.swiperefreshlayout)
+
+    // Navigation Component (Fragment-based with SafeArgs)
+    implementation(libs.navigation.fragment)
+    implementation(libs.navigation.ui)
+
+    // Room (Single Source of Truth)
+    implementation(libs.room.runtime)
+    implementation(libs.room.ktx)
+    ksp(libs.room.compiler)
 
     // Networking
     implementation(libs.retrofit)
@@ -77,25 +96,13 @@ dependencies {
 
     // ViewModel & LiveData (MVVM)
     implementation(libs.lifecycle.viewmodel)
-    implementation(libs.lifecycle.viewmodel.compose)
     implementation(libs.lifecycle.livedata)
-    implementation(libs.lifecycle.runtime.compose)
 
-    // Image loading
-    implementation(libs.coil)
+    // Image Loading
+    implementation(libs.glide)
 
-    // Compose Runtime LiveData (for observeAsState)
-    implementation(libs.compose.runtime.livedata)
-
-    // Material Icons Extended
-    implementation(libs.material.icons.extended)
-
-    // DataStore (for token storage)
+    // DataStore (token/auth storage)
     implementation(libs.datastore.preferences)
-
-    // Navigation Compose + Fragment (NavHostFragment + SafeArgs)
-    implementation(libs.navigation.compose)
-    implementation(libs.navigation.fragment)
 
     // Google Sign-In (Credential Manager)
     implementation(libs.credentials)
@@ -105,18 +112,8 @@ dependencies {
     // Socket.io
     implementation(libs.socketio.client)
 
-    // Fragment + RecyclerView + AppCompat + Material (for Fragment-based screens)
-    implementation(libs.fragment.ktx)
-    implementation(libs.recyclerview)
-    implementation(libs.appcompat)
-    implementation(libs.material)
-
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
-    debugImplementation(libs.androidx.compose.ui.tooling)
-    debugImplementation(libs.androidx.compose.ui.test.manifest)
 }

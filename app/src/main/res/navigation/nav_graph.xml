@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/loginFragment">
+
+    <!-- ======================================================
+         AUTH FLOW
+         ====================================================== -->
+
+    <fragment
+        android:id="@+id/loginFragment"
+        android:name="com.example.rootsharemobile.ui.fragment.auth.LoginFragment"
+        android:label="Login"
+        tools:layout="@layout/fragment_login">
+
+        <!-- Navigate to registration screen -->
+        <action
+            android:id="@+id/action_login_to_register"
+            app:destination="@id/registerFragment" />
+
+        <!-- Navigate to home after successful login (clear auth back-stack) -->
+        <action
+            android:id="@+id/action_login_to_home"
+            app:destination="@id/homeFragment"
+            app:popUpTo="@id/loginFragment"
+            app:popUpToInclusive="true" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/registerFragment"
+        android:name="com.example.rootsharemobile.ui.fragment.auth.RegisterFragment"
+        android:label="Register"
+        tools:layout="@layout/fragment_register">
+
+        <!-- Navigate back to login after successful registration -->
+        <action
+            android:id="@+id/action_register_to_login"
+            app:destination="@id/loginFragment"
+            app:popUpTo="@id/loginFragment"
+            app:popUpToInclusive="true" />
+    </fragment>
+
+    <!-- ======================================================
+         MAIN APP FLOW
+         SafeArgs: LoginFragment passes the username to HomeFragment
+         so a personalised welcome message can be shown.
+         ====================================================== -->
+
+    <fragment
+        android:id="@+id/homeFragment"
+        android:name="com.example.rootsharemobile.ui.fragment.home.HomeFragment"
+        android:label="Home"
+        tools:layout="@layout/fragment_home">
+
+        <!-- SafeArgs argument: logged-in username for the welcome banner -->
+        <argument
+            android:name="username"
+            app:argType="string"
+            android:defaultValue="Gardener" />
+
+        <!-- Bottom-nav destination: Profile -->
+        <action
+            android:id="@+id/action_home_to_profile"
+            app:destination="@id/profileFragment" />
+
+        <!-- Bottom-nav destination: My Garden -->
+        <action
+            android:id="@+id/action_home_to_my_garden"
+            app:destination="@id/myGardenFragment" />
+
+        <!-- Bottom-nav destination: Community -->
+        <action
+            android:id="@+id/action_home_to_community"
+            app:destination="@id/communityFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/profileFragment"
+        android:name="com.example.rootsharemobile.ui.fragment.profile.ProfileFragment"
+        android:label="Profile"
+        tools:layout="@layout/fragment_profile">
+
+        <!-- Navigate to login after logout (clear entire back-stack) -->
+        <action
+            android:id="@+id/action_profile_to_login"
+            app:destination="@id/loginFragment"
+            app:popUpTo="@id/homeFragment"
+            app:popUpToInclusive="true" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/myGardenFragment"
+        android:name="com.example.rootsharemobile.ui.fragment.shared.MyGardenFragment"
+        android:label="My Garden"
+        tools:layout="@layout/fragment_my_garden">
+
+        <!-- Navigate to plant details, passing the plant ID via SafeArgs -->
+        <action
+            android:id="@+id/action_garden_to_plant_details"
+            app:destination="@id/plantDetailsFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/plantDetailsFragment"
+        android:name="com.example.rootsharemobile.ui.fragment.garden.PlantDetailsFragment"
+        android:label="Plant Details"
+        tools:layout="@layout/fragment_plant_details">
+
+        <!-- SafeArgs: plant ID passed from MyGardenFragment -->
+        <argument
+            android:name="plantId"
+            app:argType="string" />
+    </fragment>
+
+    <!-- ======================================================
+         COMMUNITY / CHAT FLOW
+         Nested navigation so the bottom nav "Community" tab
+         (id=communityFragment) maps to the chat list as its
+         start destination. chatRoomFragment hides the bottom nav.
+         ====================================================== -->
+
+    <navigation
+        android:id="@+id/communityFragment"
+        app:startDestination="@id/chatListFragment">
+
+        <fragment
+            android:id="@+id/chatListFragment"
+            android:name="com.example.rootsharemobile.ui.screens.chat.ChatListFragment"
+            android:label="Community"
+            tools:layout="@layout/fragment_chat_list">
+
+            <action
+                android:id="@+id/action_chatListFragment_to_chatRoomFragment"
+                app:destination="@id/chatRoomFragment" />
+        </fragment>
+
+        <fragment
+            android:id="@+id/chatRoomFragment"
+            android:name="com.example.rootsharemobile.ui.screens.chat.ChatRoomFragment"
+            android:label="Chat"
+            tools:layout="@layout/fragment_chat_room">
+
+            <argument
+                android:name="chatId"
+                app:argType="string" />
+
+            <!-- Self-loop action: navigate from one chat room to another
+                 (e.g., tapping an avatar opens a 1:1 chat) -->
+            <action
+                android:id="@+id/action_chatRoomFragment_to_chatRoomFragment"
+                app:destination="@id/chatRoomFragment"
+                app:launchSingleTop="false" />
+        </fragment>
+
+    </navigation>
+
+</navigation>

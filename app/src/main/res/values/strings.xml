@@ -1,3 +1,148 @@
 <resources>
-    <string name="app_name">RootShareMobile</string>
+    <string name="app_name">RootShare</string>
+
+    <!-- Login screen -->
+    <string name="label_email">Email address</string>
+    <string name="label_password">Password</string>
+    <string name="hint_email">you@example.com</string>
+    <string name="hint_password">Your password</string>
+    <string name="btn_login">Sign In</string>
+    <string name="btn_google_sign_in">Continue with Google</string>
+    <string name="link_no_account">Don\'t have an account? Register</string>
+    <string name="loading_signing_in">Signing in…</string>
+
+    <!-- Register screen -->
+    <string name="label_username">Username</string>
+    <string name="label_confirm_password">Confirm password</string>
+    <string name="hint_username">Choose a username</string>
+    <string name="hint_confirm_password">Repeat your password</string>
+    <string name="btn_register">Create Account</string>
+    <string name="btn_google_sign_up">Sign up with Google</string>
+    <string name="link_have_account">Already have an account? Sign In</string>
+    <string name="loading_registering">Creating account…</string>
+
+    <!-- Home screen -->
+    <string name="home_greeting">Welcome back, %1$s!</string>
+    <string name="section_featured_plants">Featured Plants</string>
+    <string name="section_community_feed">Community Feed</string>
+    <string name="loading_feed">Loading feed…</string>
+    <string name="empty_feed">No posts yet. Be the first to share!</string>
+    <string name="empty_plants">No featured plants yet.</string>
+    <string name="btn_retry">Retry</string>
+
+    <!-- Profile screen -->
+    <string name="label_profile">Profile</string>
+    <string name="label_username_display">Username</string>
+    <string name="label_email_display">Email</string>
+    <string name="btn_logout">Logout</string>
+    <string name="btn_change_photo">Change Photo</string>
+    <string name="dialog_photo_title">Change Profile Photo</string>
+    <string name="dialog_photo_camera">Take Photo</string>
+    <string name="dialog_photo_gallery">Choose from Gallery</string>
+    <string name="dialog_photo_cancel">Cancel</string>
+    <string name="dialog_photo_remove">Remove Photo</string>
+    <string name="uploading_photo">Uploading…</string>
+    <string name="msg_photo_uploaded">Profile photo updated!</string>
+    <string name="msg_logout_confirm">Logging out…</string>
+    <string name="btn_edit_profile">Edit Profile</string>
+    <string name="btn_save_profile">Save</string>
+    <string name="msg_profile_updated">Profile updated!</string>
+    <string name="cd_logout">Logout</string>
+
+    <!-- Profile dashboard -->
+    <string name="stat_plants">Plants</string>
+    <string name="stat_posts">Posts</string>
+    <string name="stat_member">Member</string>
+
+    <!-- My Garden screen -->
+    <string name="label_my_garden">My Garden</string>
+    <string name="placeholder_my_garden">Your plant collection will appear here.</string>
+    <string name="garden_empty_title">Your garden is empty</string>
+    <string name="garden_empty_subtitle">Tap + to add your first plant</string>
+    <string name="fab_add_plant">Add Plant</string>
+
+    <!-- Add / Edit plant bottom sheet -->
+    <string name="title_add_plant">Add Plant</string>
+    <string name="title_edit_plant">Edit Plant</string>
+    <string name="label_plant_name">Plant name</string>
+    <string name="hint_plant_name">e.g. Monstera</string>
+    <string name="label_plant_species">Species</string>
+    <string name="hint_plant_species">e.g. Monstera deliciosa</string>
+    <string name="label_image_url">Image URL</string>
+    <string name="hint_image_url">https://…</string>
+    <string name="hint_image_url_optional">Leave empty for a random plant image</string>
+    <string name="label_status">Health status</string>
+    <string name="btn_add_plant">Add to Garden</string>
+    <string name="btn_save_changes">Save Changes</string>
+
+    <!-- Plant details -->
+    <string name="title_plant_details">Plant Details</string>
+    <string name="label_post_count">%1$d posts</string>
+    <string name="label_no_posts">No posts yet</string>
+    <string name="label_added_on">Added %1$s</string>
+    <string name="btn_delete_plant">Delete Plant</string>
+    <string name="btn_cancel">Cancel</string>
+    <string name="dialog_delete_title">Delete Plant?</string>
+    <string name="dialog_delete_message">This will permanently remove \"%1$s\" from your garden.</string>
+    <string name="btn_confirm_delete">Delete</string>
+
+    <!-- Garden action results -->
+    <string name="msg_plant_added">Plant added to your garden!</string>
+    <string name="msg_plant_updated">Plant updated.</string>
+    <string name="msg_plant_deleted">Plant removed from your garden.</string>
+
+    <!-- My Posts (profile grid) -->
+    <string name="label_my_posts">My Posts</string>
+    <string name="posts_empty_title">No posts yet</string>
+    <string name="posts_empty_subtitle">Your posts will appear here</string>
+    <string name="dialog_post_actions_title">Post Actions</string>
+    <string name="dialog_edit_post_title">Edit Post</string>
+    <string name="hint_post_content">Post content</string>
+    <string name="dialog_delete_post_title">Delete Post?</string>
+    <string name="dialog_delete_post_message">This will permanently delete this post.</string>
+
+    <!-- Add / Edit post bottom sheet -->
+    <string name="title_add_post">New Post</string>
+    <string name="title_edit_post">Edit Post</string>
+    <string name="label_post_content">Content</string>
+    <string name="hint_post_content_placeholder">What\'s happening in your garden?</string>
+    <string name="label_post_type">Post Type</string>
+    <string name="label_linked_plant">Link to Plant (optional)</string>
+    <string name="hint_no_plant">None</string>
+    <string name="label_post_images">Image URLs (one per line)</string>
+    <string name="hint_post_images">https://…</string>
+    <string name="hint_post_images_optional">Leave empty for a text-only post</string>
+    <string name="btn_create_post">Create Post</string>
+    <string name="fab_add_post">New Post</string>
+    <string name="msg_post_created">Post created!</string>
+    <string name="msg_post_updated">Post updated.</string>
+    <string name="msg_post_deleted">Post deleted.</string>
+
+    <!-- Community screen (placeholder) -->
+    <string name="label_community">Community</string>
+    <string name="placeholder_community">Community posts will appear here.</string>
+
+    <!-- Bottom navigation -->
+    <string name="nav_home">Home</string>
+    <string name="nav_my_garden">My Garden</string>
+    <string name="nav_community">Community</string>
+    <string name="nav_profile">Profile</string>
+
+    <!-- Generic error messages -->
+    <string name="error_network">No internet connection. Please check your network.</string>
+    <string name="error_server">Server error. Please try again later.</string>
+    <string name="error_unknown">Something went wrong. Please try again.</string>
+    <string name="error_field_required">This field is required.</string>
+    <string name="error_not_authenticated">Session expired. Please log in again.</string>
+
+    <!-- Feed post counters -->
+    <string name="label_likes_count">%1$d likes</string>
+    <string name="label_comments_count">%1$d comments</string>
+
+    <!-- Content descriptions for accessibility -->
+    <string name="cd_app_logo">RootShare logo</string>
+    <string name="cd_profile_picture">Profile picture</string>
+    <string name="cd_plant_image">Plant image</string>
+    <string name="cd_post_image">Post image</string>
+    <string name="cd_google_logo">Google logo</string>
 </resources>

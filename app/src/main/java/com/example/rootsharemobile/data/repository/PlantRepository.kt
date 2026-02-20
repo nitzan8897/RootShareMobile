@@ -1,45 +1,67 @@
 package com.example.rootsharemobile.data.repository
 
+import androidx.lifecycle.LiveData
+import com.example.rootsharemobile.data.local.db.dao.PlantDao
+import com.example.rootsharemobile.data.local.db.entity.PlantEntity
+import com.example.rootsharemobile.data.local.db.entity.PlantWithPostCount
 import com.example.rootsharemobile.data.model.CreatePlantRequest
 import com.example.rootsharemobile.data.model.Plant
-import com.example.rootsharemobile.data.model.PlantStatus
+import com.example.rootsharemobile.data.model.Species
 import com.example.rootsharemobile.data.model.UpdatePlantRequest
 import com.example.rootsharemobile.data.remote.RetrofitClient
 import com.example.rootsharemobile.data.remote.mapHttpError
 import com.example.rootsharemobile.data.remote.mapNetworkError
+import com.example.rootsharemobile.data.remote.parseErrorBody
 
-/**
- * Repository for Plant data operations.
- * Acts as a single source of truth for plant data.
- */
-class PlantRepository {
+class PlantRepository(private val plantDao: PlantDao) {
 
     private val apiService = RetrofitClient.apiService
 
-    /**
-     * Get all plants for the authenticated user.
-     */
-    suspend fun getPlants(token: String, status: PlantStatus? = null): Result<List<Plant>> {
+    // -------------------------------------------------------------------------
+    // Room LiveData
+    // -------------------------------------------------------------------------
+
+    fun observeFeaturedPlants(): LiveData<List<PlantEntity>> =
+        plantDao.observeFeaturedPlants()
+
+    fun observeAllPlants(): LiveData<List<PlantEntity>> =
+        plantDao.observeAllPlants()
+
+    fun observeGardenPlantsWithPostCount(userId: String): LiveData<List<PlantWithPostCount>> =
+        plantDao.observeGardenPlantsWithPostCount(userId)
+
+    fun observePlantWithPostCount(plantId: String): LiveData<PlantWithPostCount?> =
+        plantDao.observePlantWithPostCount(plantId)
+
+    // -------------------------------------------------------------------------
+    // Species
+    // -------------------------------------------------------------------------
+
+    suspend fun fetchSpecies(token: String): Result<List<Species>> {
         return try {
-            val response = apiService.getPlants("Bearer $token", status)
+            val response = apiService.getSpecies("Bearer $token")
             if (response.isSuccessful) {
                 Result.success(response.body() ?: emptyList())
             } else {
-                Result.failure(Exception(mapHttpError(response.code(), "plants")))
+                Result.failure(Exception(mapHttpError(response.code(), "species")))
             }
         } catch (e: Exception) {
             Result.failure(Exception(mapNetworkError(e)))
         }
     }
 
-    /**
-     * Get featured plants from all users.
-     */
-    suspend fun getFeaturedPlants(token: String, limit: Int? = null): Result<List<Plant>> {
+    // -------------------------------------------------------------------------
+    // Network + cache operations
+    // -------------------------------------------------------------------------
+
+    suspend fun fetchAndStoreFeaturedPlants(token: String, limit: Int? = null): Result<Unit> {
         return try {
             val response = apiService.getFeaturedPlants("Bearer $token", limit)
             if (response.isSuccessful) {
-                Result.success(response.body() ?: emptyList())
+                val plants = response.body() ?: emptyList()
+                plantDao.clearFeaturedFlag()
+                plantDao.insertPlants(plants.map { it.toEntity(isFeatured = true) })
+                Result.success(Unit)
             } else {
                 Result.failure(Exception(mapHttpError(response.code(), "plants")))
             }
@@ -48,61 +70,60 @@ class PlantRepository {
         }
     }
 
-    /**
-     * Get a specific plant by ID.
-     */
-    suspend fun getPlantById(token: String, id: String): Result<Plant> {
+    suspend fun fetchAndStorePlants(token: String): Result<Unit> {
         return try {
-            val response = apiService.getPlantById("Bearer $token", id)
-            if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!)
+            val response = apiService.getPlants("Bearer $token")
+            if (response.isSuccessful) {
+                val plants = response.body() ?: emptyList()
+                plantDao.deleteNonFeaturedPlants()
+                plantDao.insertPlants(plants.map { it.toEntity(isFeatured = false) })
+                Result.success(Unit)
             } else {
-                Result.failure(Exception(mapHttpError(response.code(), "plant")))
+                Result.failure(Exception(mapHttpError(response.code(), "plants")))
             }
         } catch (e: Exception) {
             Result.failure(Exception(mapNetworkError(e)))
         }
     }
 
-    /**
-     * Create a new plant.
-     */
     suspend fun createPlant(token: String, request: CreatePlantRequest): Result<Plant> {
         return try {
             val response = apiService.createPlant("Bearer $token", request)
             if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!)
+                val plant = response.body()!!
+                plantDao.insertPlants(listOf(plant.toEntity(isFeatured = false)))
+                Result.success(plant)
             } else {
-                Result.failure(Exception(mapHttpError(response.code(), "plant")))
+                val msg = parseErrorBody(response.errorBody()) ?: mapHttpError(response.code(), "plant")
+                Result.failure(Exception(msg))
             }
         } catch (e: Exception) {
             Result.failure(Exception(mapNetworkError(e)))
         }
     }
 
-    /**
-     * Update an existing plant.
-     */
     suspend fun updatePlant(token: String, id: String, request: UpdatePlantRequest): Result<Plant> {
         return try {
             val response = apiService.updatePlant("Bearer $token", id, request)
             if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!)
+                val plant = response.body()!!
+                val existing = plantDao.getPlantById(id)
+                plantDao.insertPlants(listOf(plant.toEntity(isFeatured = existing?.isFeatured ?: false)))
+                Result.success(plant)
             } else {
-                Result.failure(Exception(mapHttpError(response.code(), "plant")))
+                val msg = parseErrorBody(response.errorBody()) ?: mapHttpError(response.code(), "plant")
+                Result.failure(Exception(msg))
             }
         } catch (e: Exception) {
             Result.failure(Exception(mapNetworkError(e)))
         }
     }
 
-    /**
-     * Delete a plant.
-     */
     suspend fun deletePlant(token: String, id: String): Result<Boolean> {
         return try {
             val response = apiService.deletePlant("Bearer $token", id)
             if (response.isSuccessful) {
+                plantDao.deletePlantById(id)
                 Result.success(true)
             } else {
                 Result.failure(Exception(mapHttpError(response.code(), "plant")))
@@ -111,4 +132,22 @@ class PlantRepository {
             Result.failure(Exception(mapNetworkError(e)))
         }
     }
+
+    suspend fun clearLocalCache() = plantDao.deleteAllPlants()
+
+    // -------------------------------------------------------------------------
+    // Mapper
+    // -------------------------------------------------------------------------
+
+    private fun Plant.toEntity(isFeatured: Boolean) = PlantEntity(
+        id = this.id,
+        userId = this.userId,
+        name = this.name,
+        species = this.species,
+        status = this.status.name,
+        imageUrl = this.imageUrl,
+        isFeatured = isFeatured,
+        createdAt = this.createdAt,
+        updatedAt = this.updatedAt
+    )
 }
