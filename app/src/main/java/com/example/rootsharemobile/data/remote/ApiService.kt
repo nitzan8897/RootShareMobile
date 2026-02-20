@@ -1,7 +1,14 @@
 package com.example.rootsharemobile.data.remote
 
 import com.example.rootsharemobile.data.model.AuthResponse
+import com.example.rootsharemobile.data.model.ChatMessageResponse
+import com.example.rootsharemobile.data.model.ChatResponse
+import com.example.rootsharemobile.data.model.CreateChatRequest
+import com.example.rootsharemobile.data.model.CreateGroupChatRequest
 import com.example.rootsharemobile.data.model.CreatePlantRequest
+import com.example.rootsharemobile.data.model.MakeAdminRequest
+import com.example.rootsharemobile.data.model.RemoveMemberRequest
+import com.example.rootsharemobile.data.model.RenameGroupRequest
 import com.example.rootsharemobile.data.model.CreatePostRequest
 import com.example.rootsharemobile.data.model.GoogleTokenRequest
 import com.example.rootsharemobile.data.model.LoginRequest
@@ -19,6 +26,7 @@ import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.HTTP
 import retrofit2.http.Header
 import retrofit2.http.Multipart
 import retrofit2.http.PATCH
@@ -221,6 +229,79 @@ interface ApiService {
         @Header("Authorization") token: String,
         @Path("id") id: String
     ): Response<DeleteResponse>
+    // ==================== USERS ====================
+
+    @GET("users/search")
+    suspend fun searchUsers(
+        @Header("Authorization") token: String,
+        @Query("query") query: String
+    ): Response<List<User>>
+
+    // ==================== CHATS ====================
+
+    @GET("chats")
+    suspend fun getChats(
+        @Header("Authorization") token: String
+    ): Response<List<ChatResponse>>
+
+    @POST("chats")
+    suspend fun createOrGetChat(
+        @Header("Authorization") token: String,
+        @Body request: CreateChatRequest
+    ): Response<ChatResponse>
+
+    @POST("chats/group")
+    suspend fun createGroupChat(
+        @Header("Authorization") token: String,
+        @Body request: CreateGroupChatRequest
+    ): Response<ChatResponse>
+
+    @GET("chats/{chatId}/messages")
+    suspend fun getChatMessages(
+        @Header("Authorization") token: String,
+        @Path("chatId") chatId: String,
+        @Query("limit") limit: Int = 30,
+        @Query("page") page: Int = 1
+    ): Response<List<ChatMessageResponse>>
+
+    @POST("chats/{chatId}/read")
+    suspend fun markChatAsRead(
+        @Header("Authorization") token: String,
+        @Path("chatId") chatId: String
+    ): Response<Unit>
+
+    @POST("chats/{chatId}/leave")
+    suspend fun leaveGroupChat(
+        @Header("Authorization") token: String,
+        @Path("chatId") chatId: String
+    ): Response<Unit>
+
+    @PATCH("chats/{chatId}/name")
+    suspend fun renameGroupChat(
+        @Header("Authorization") token: String,
+        @Path("chatId") chatId: String,
+        @Body request: RenameGroupRequest
+    ): Response<ChatResponse>
+
+    @HTTP(method = "DELETE", path = "chats/{chatId}/members", hasBody = true)
+    suspend fun removeGroupMember(
+        @Header("Authorization") token: String,
+        @Path("chatId") chatId: String,
+        @Body request: RemoveMemberRequest
+    ): Response<Unit>
+
+    @DELETE("chats/{chatId}")
+    suspend fun deleteGroupChat(
+        @Header("Authorization") token: String,
+        @Path("chatId") chatId: String
+    ): Response<Unit>
+
+    @PATCH("chats/{chatId}/admin")
+    suspend fun makeGroupAdmin(
+        @Header("Authorization") token: String,
+        @Path("chatId") chatId: String,
+        @Body request: MakeAdminRequest
+    ): Response<ChatResponse>
 }
 
 /**

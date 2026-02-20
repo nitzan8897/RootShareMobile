@@ -22,6 +22,14 @@
         <item name="android:statusBarColor">@color/emerald_600</item>
     </style>
 
+    <!-- Full-screen dialog style (used by chat dialogs: NewChat, NewGroupChat, GroupInfo) -->
+    <style name="Theme.RootShareMobile.FullScreenDialog" parent="Theme.MaterialComponents.Light.Dialog">
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowIsFloating">false</item>
+        <item name="android:windowBackground">@android:color/white</item>
+        <item name="android:statusBarColor">@android:color/white</item>
+    </style>
+
     <!-- Filled primary button style (used across all screens) -->
     <style name="Widget.RootShare.Button" parent="Widget.MaterialComponents.Button">
         <item name="backgroundTint">@color/emerald_500</item>

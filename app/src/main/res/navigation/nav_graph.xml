@@ -114,10 +114,46 @@
             app:argType="string" />
     </fragment>
 
-    <fragment
+    <!-- ======================================================
+         COMMUNITY / CHAT FLOW
+         Nested navigation so the bottom nav "Community" tab
+         (id=communityFragment) maps to the chat list as its
+         start destination. chatRoomFragment hides the bottom nav.
+         ====================================================== -->
+
+    <navigation
         android:id="@+id/communityFragment"
-        android:name="com.example.rootsharemobile.ui.fragment.shared.CommunityFragment"
-        android:label="Community"
-        tools:layout="@layout/fragment_community" />
+        app:startDestination="@id/chatListFragment">
+
+        <fragment
+            android:id="@+id/chatListFragment"
+            android:name="com.example.rootsharemobile.ui.screens.chat.ChatListFragment"
+            android:label="Community"
+            tools:layout="@layout/fragment_chat_list">
+
+            <action
+                android:id="@+id/action_chatListFragment_to_chatRoomFragment"
+                app:destination="@id/chatRoomFragment" />
+        </fragment>
+
+        <fragment
+            android:id="@+id/chatRoomFragment"
+            android:name="com.example.rootsharemobile.ui.screens.chat.ChatRoomFragment"
+            android:label="Chat"
+            tools:layout="@layout/fragment_chat_room">
+
+            <argument
+                android:name="chatId"
+                app:argType="string" />
+
+            <!-- Self-loop action: navigate from one chat room to another
+                 (e.g., tapping an avatar opens a 1:1 chat) -->
+            <action
+                android:id="@+id/action_chatRoomFragment_to_chatRoomFragment"
+                app:destination="@id/chatRoomFragment"
+                app:launchSingleTop="false" />
+        </fragment>
+
+    </navigation>
 
 </navigation>

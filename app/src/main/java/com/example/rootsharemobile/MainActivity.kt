@@ -16,7 +16,7 @@ import com.example.rootsharemobile.databinding.ActivityMainBinding
  * Responsibilities:
  *  - Inflate [ActivityMainBinding] (activity_main.xml).
  *  - Wire the [NavController] to the [BottomNavigationView].
- *  - Hide the bottom nav on auth destinations (Login, Register).
+ *  - Hide the bottom nav on auth destinations (Login, Register) and chat room.
  *
  * No business logic lives here — the Activity is purely an
  * infrastructure component that hosts Fragments.
@@ -26,11 +26,11 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var navController: NavController
 
-    /** Fragment IDs that are part of the main app (bottom nav shown). */
+    /** Fragment IDs where the bottom nav is visible. */
     private val mainDestinations = setOf(
         R.id.homeFragment,
         R.id.myGardenFragment,
-        R.id.communityFragment,
+        R.id.chatListFragment,
         R.id.profileFragment
     )
 
@@ -51,7 +51,7 @@ class MainActivity : AppCompatActivity() {
         navController = navHostFragment.navController
 
         // Connect the BottomNavigationView to the NavController.
-        // Menu item IDs must match Fragment IDs in nav_graph.xml.
+        // Menu item IDs must match Fragment/graph IDs in nav_graph.xml.
         binding.bottomNavigation.setupWithNavController(navController)
 
         // Show/hide bottom nav based on the current destination
