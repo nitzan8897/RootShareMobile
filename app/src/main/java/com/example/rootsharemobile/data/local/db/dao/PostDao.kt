@@ -41,6 +41,10 @@ interface PostDao {
     @Query("SELECT * FROM posts WHERE id = :postId LIMIT 1")
     suspend fun getPostById(postId: String): PostEntity?
 
+    /** Observe a single post by ID (for detail view). */
+    @Query("SELECT * FROM posts WHERE id = :postId LIMIT 1")
+    fun observePostById(postId: String): LiveData<PostEntity?>
+
     /** Returns the IDs of all posts the current user has liked locally. */
     @Query("SELECT id FROM posts WHERE isLikedByMe = 1")
     suspend fun getLikedPostIds(): List<String>

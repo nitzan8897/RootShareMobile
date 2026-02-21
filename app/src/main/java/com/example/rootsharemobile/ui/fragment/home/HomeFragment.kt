@@ -8,6 +8,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.rootsharemobile.R
@@ -88,8 +89,12 @@ class HomeFragment : Fragment() {
             adapter = plantsAdapter
         }
 
-        // Vertical community feed — like and comment buttons wired here
+        // Vertical community feed — click, like and comment buttons wired here
         feedAdapter = FeedPostAdapter(
+            onPostClick = { post ->
+                val action = HomeFragmentDirections.actionHomeToPostDetails(post.id)
+                findNavController().navigate(action)
+            },
             onLikeClick = { post ->
                 lifecycleScope.launch {
                     val token = authViewModel.getAccessToken() ?: return@launch

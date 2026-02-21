@@ -35,6 +35,9 @@ class PostRepository(private val postDao: PostDao) {
     fun observeUserPosts(userId: String): LiveData<List<PostEntity>> =
         postDao.observeUserPosts(userId)
 
+    fun observePostById(postId: String): LiveData<PostEntity?> =
+        postDao.observePostById(postId)
+
     // -------------------------------------------------------------------------
     // Network + cache operations.
     // -------------------------------------------------------------------------

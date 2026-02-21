@@ -42,7 +42,6 @@ data class Comment(
     val updatedAt: String = ""
 )
 
-/** DTO for creating a new comment. */
 data class CreateCommentRequest(
     val postId: String,
     val content: String

@@ -77,6 +77,9 @@
 
     <!-- Plant details -->
     <string name="title_plant_details">Plant Details</string>
+
+    <!-- Post details -->
+    <string name="title_post_details">Post Details</string>
     <string name="label_post_count">%1$d posts</string>
     <string name="label_no_posts">No posts yet</string>
     <string name="label_added_on">Added %1$s</string>
@@ -138,6 +141,12 @@
     <!-- Feed post counters -->
     <string name="label_likes_count">%1$d likes</string>
     <string name="label_comments_count">%1$d comments</string>
+
+    <!-- Comments -->
+    <string name="label_comments">Comments</string>
+    <string name="empty_comments">No comments yet. Be the first!</string>
+    <string name="hint_add_comment">Add a comment…</string>
+    <string name="btn_send_comment">Send comment</string>
 
     <!-- Content descriptions for accessibility -->
     <string name="cd_app_logo">RootShare logo</string>

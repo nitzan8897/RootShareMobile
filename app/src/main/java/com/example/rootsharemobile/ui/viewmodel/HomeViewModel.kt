@@ -65,6 +65,10 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     val feedPosts: LiveData<List<PostEntity>> =
         postRepository.observeAllPosts()
 
+    /** Observe a single post by ID (for detail view). */
+    fun observePostById(postId: String): LiveData<PostEntity?> =
+        postRepository.observePostById(postId)
+
     private val _uiState = MutableLiveData<HomeUiState>()
     val uiState: LiveData<HomeUiState> = _uiState
 

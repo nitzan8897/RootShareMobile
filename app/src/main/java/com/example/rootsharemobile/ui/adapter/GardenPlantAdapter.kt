@@ -46,7 +46,6 @@ class GardenPlantAdapter(
             binding.textPlantName.text = plant.displayTitle
             binding.textPlantSpecies.text = plant.displayCategory
 
-            // Status badge — colour depends on health status
             binding.textStatusBadge.text = plant.badge
             val (bgColor, textColor) = when (plant.status.uppercase()) {
                 "ACTIVE"  -> R.color.badge_active_bg  to R.color.badge_active_text
@@ -57,10 +56,8 @@ class GardenPlantAdapter(
                 ContextCompat.getColorStateList(ctx, bgColor)
             binding.textStatusBadge.setTextColor(ContextCompat.getColor(ctx, textColor))
 
-            // Post count
             binding.textPostCount.text = item.postCount.toString()
 
-            // Plant image via Glide
             val imageUrl = ApiConfig.resolveImageUrl(plant.imageUrl)
             Glide.with(binding.imagePlant.context)
                 .load(imageUrl)

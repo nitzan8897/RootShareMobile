@@ -5,17 +5,20 @@ import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.rootsharemobile.data.local.TokenManager
-import com.example.rootsharemobile.data.model.ChatMessageResponse
-import com.example.rootsharemobile.data.model.ChatResponse
-import com.example.rootsharemobile.data.model.CreateChatRequest
-import com.example.rootsharemobile.data.model.CreateGroupChatRequest
+import com.example.rootsharemobile.data.local.db.AppDatabase
+import com.example.rootsharemobile.data.local.db.entity.ChatEntity
+import com.example.rootsharemobile.data.local.db.entity.MessageEntity
 import com.example.rootsharemobile.data.model.User
 import com.example.rootsharemobile.data.remote.ConnectionStatus
 import com.example.rootsharemobile.data.remote.RetrofitClient
 import com.example.rootsharemobile.data.remote.SocketManager
+import com.example.rootsharemobile.data.repository.ChatRepository
 import com.example.rootsharemobile.ui.components.ChatPreview
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.text.SimpleDateFormat
@@ -28,9 +31,17 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     private val tokenManager = TokenManager(application)
     private val api = RetrofitClient.apiService
 
-    private val _chats = MutableStateFlow<List<ChatPreview>>(emptyList())
-    val chats: StateFlow<List<ChatPreview>> = _chats
+    // Room database and repository
+    private val database = AppDatabase.getInstance(application)
+    private val chatRepository = ChatRepository(database.chatDao(), database.messageDao())
 
+    // Observe chats from Room - converted to ChatPreview for UI compatibility
+    val chats: StateFlow<List<ChatPreview>> = chatRepository.observeAllChats()
+        .map { entities -> entities.map { it.toChatPreview() } }
+        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
+    // Messages for the current chat - observed from Room
+    private val _currentChatId = MutableStateFlow<String?>(null)
     private val _messages = MutableStateFlow<List<ChatMessage>>(emptyList())
     val messages: StateFlow<List<ChatMessage>> = _messages
 
@@ -53,13 +64,14 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     private var currentUserId: String? = null
     private var currentUserName: String? = null
     private var accessToken: String? = null
-    private var listenersRegistered = false   // guards against duplicate socket handlers
+    private var listenersRegistered = false
     private var currentChatIsGroup = false
 
-    private var chatResponseMap = mutableMapOf<String, ChatResponse>()
+    // Cache for ChatResponse data (for group info etc.)
+    private var chatEntityCache = mutableMapOf<String, ChatEntity>()
 
-    private val _currentChatDetail = MutableStateFlow<ChatResponse?>(null)
-    val currentChatDetail: StateFlow<ChatResponse?> = _currentChatDetail
+    private val _currentChatDetail = MutableStateFlow<ChatEntity?>(null)
+    val currentChatDetail: StateFlow<ChatEntity?> = _currentChatDetail
 
     private val messageListener: (Array<Any>) -> Unit = { args ->
         try {
@@ -68,28 +80,36 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
             val content = data.optString("content", "")
             val id = data.optString("_id", UUID.randomUUID().toString())
             val timestamp = data.optString("timestamp",
-                data.optString("createdAt", currentTime()))
+                data.optString("createdAt", currentTimeIso()))
 
             val senderId = parseSenderId(data)
             val senderName = parseSenderName(data)
 
             // Skip echo of own messages
             if (senderId != currentUserId) {
-                val message = ChatMessage(
+                val messageEntity = MessageEntity(
                     id = id,
-                    text = content,
-                    isFromMe = false,
-                    timestamp = formatTimestamp(timestamp),
+                    chatId = chatId,
+                    senderId = senderId,
                     senderName = senderName,
-                    senderInitial = senderName.take(1).uppercase(),
-                    senderId = senderId
+                    content = content,
+                    timestamp = formatTimestamp(timestamp),
+                    createdAt = timestamp,
+                    isFromMe = false,
+                    isSystem = false
                 )
 
-                if (chatId == currentChatId) {
-                    _messages.value = _messages.value + message
-                }
+                viewModelScope.launch {
+                    // Insert into Room
+                    chatRepository.insertMessage(messageEntity)
+                    // Update chat last message
+                    chatRepository.updateChatLastMessage(chatId, content, formatTimestamp(timestamp))
 
-                updateChatLastMessage(chatId, content, formatTimestamp(timestamp))
+                    // If this is the current chat, update the messages list
+                    if (chatId == currentChatId) {
+                        _messages.value = _messages.value + messageEntity.toChatMessage()
+                    }
+                }
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to parse message", e)
@@ -124,7 +144,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
             val removedBy = data.optString("removedBy", "")
             if (chatId == currentChatId) {
                 val text = if (removedBy == username) "'$username' left the group"
-                    else "'$removedBy' removed '$username'"
+                else "'$removedBy' removed '$username'"
                 val msg = ChatMessage(
                     id = "sys_${System.currentTimeMillis()}",
                     text = text,
@@ -158,20 +178,24 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
             val chatId = data.optString("chatId", "")
             val newName = data.optString("name", "")
             if (newName.isNotBlank()) {
-                _chats.value = _chats.value.map {
-                    if (it.chatId == chatId) it.copy(participantName = newName) else it
-                }
-                chatResponseMap[chatId]?.let { cr ->
-                    chatResponseMap[chatId] = cr.copy(name = newName)
-                }
-                if (chatId == currentChatId) {
-                    _currentChatDetail.value = chatResponseMap[chatId]
-                    val msg = ChatMessage(
-                        id = "sys_${System.currentTimeMillis()}",
-                        text = "Group renamed to \"$newName\"",
-                        isFromMe = false, timestamp = "", isSystem = true
-                    )
-                    _messages.value = _messages.value + msg
+                viewModelScope.launch {
+                    // Update in Room
+                    chatRepository.updateChatName(chatId, newName)
+
+                    // Update cache
+                    chatEntityCache[chatId]?.let { entity ->
+                        chatEntityCache[chatId] = entity.copy(name = newName)
+                    }
+
+                    if (chatId == currentChatId) {
+                        _currentChatDetail.value = chatEntityCache[chatId]
+                        val msg = ChatMessage(
+                            id = "sys_${System.currentTimeMillis()}",
+                            text = "Group renamed to \"$newName\"",
+                            isFromMe = false, timestamp = "", isSystem = true
+                        )
+                        _messages.value = _messages.value + msg
+                    }
                 }
             }
         } catch (e: Exception) {
@@ -185,10 +209,10 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
             val user = tokenManager.getUser()
             currentUserId = user?.id
             currentUserName = user?.username
+            chatRepository.setCurrentUserId(currentUserId)
             val token = accessToken ?: return@launch
 
-            // Register event handlers only once — prevents duplicate message/typing callbacks
-            // if connect() is called again after a disconnect.
+            // Register event handlers only once
             if (!listenersRegistered) {
                 SocketManager.on("message", messageListener)
                 SocketManager.on("typing", typingListener)
@@ -198,13 +222,12 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                 listenersRegistered = true
             }
 
-            // Always attempt a socket connection when not already connected.
-            // Using SocketManager.isConnected instead of a local flag means this works
-            // even after a disconnect or a failed first attempt (regular-user offline fix).
+            // Connect socket if not already connected
             if (!SocketManager.isConnected) {
                 SocketManager.connect(token)
             }
 
+            // Load chats from server and store in Room (offline-first)
             loadChats()
         }
     }
@@ -214,13 +237,14 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val response = api.getChats("Bearer $token")
-                if (response.isSuccessful) {
-                    val body = response.body() ?: emptyList()
-                    body.forEach { chatResponseMap[it.id] = it }
-                    _chats.value = body.map { it.toChatPreview() }
+                val result = chatRepository.fetchAndStoreChats(token)
+                if (result.isSuccess) {
+                    // Update local cache
+                    result.getOrNull()?.forEach { entity ->
+                        chatEntityCache[entity.id] = entity
+                    }
                 } else {
-                    Log.e(TAG, "Failed to load chats: ${response.code()}")
+                    Log.e(TAG, "Failed to load chats: ${result.exceptionOrNull()?.message}")
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to load chats", e)
@@ -234,10 +258,31 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         if (currentChatId == chatId) return
         currentChatId?.let { SocketManager.leaveRoom(it) }
         currentChatId = chatId
+        _currentChatId.value = chatId
         _messages.value = emptyList()
         _isTyping.value = false
         currentChatIsGroup = isGroupChat(chatId)
-        _currentChatDetail.value = chatResponseMap[chatId]
+
+        viewModelScope.launch {
+            // First show cached messages (offline-first)
+            val cachedMessages = chatRepository.getCachedMessages(chatId)
+            if (cachedMessages.isNotEmpty()) {
+                val messages = cachedMessages.map { it.toChatMessage() }.toMutableList()
+                if (currentChatIsGroup) {
+                    val groupName = chats.value.find { it.chatId == chatId }?.participantName ?: "Group"
+                    messages.add(0, ChatMessage(
+                        id = "sys_created",
+                        text = "Group \"$groupName\" created",
+                        isFromMe = false, timestamp = "", isSystem = true
+                    ))
+                }
+                _messages.value = messages
+            }
+
+            // Update current chat detail from cache
+            _currentChatDetail.value = chatEntityCache[chatId] ?: chatRepository.getChatById(chatId)
+        }
+
         SocketManager.joinRoom(chatId)
         loadMessages(chatId)
         markAsRead(chatId)
@@ -252,12 +297,11 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         val token = accessToken ?: return
         viewModelScope.launch {
             try {
-                val response = api.getChatMessages("Bearer $token", chatId)
-                if (response.isSuccessful) {
-                    val body = response.body() ?: emptyList()
-                    val messages = body.map { it.toChatMessage() }.reversed().toMutableList()
+                val result = chatRepository.fetchAndStoreMessages(token, chatId)
+                if (result.isSuccess) {
+                    val messages = result.getOrNull()?.map { it.toChatMessage() }?.toMutableList() ?: mutableListOf()
                     if (currentChatIsGroup) {
-                        val groupName = _chats.value.find { it.chatId == chatId }?.participantName ?: "Group"
+                        val groupName = chats.value.find { it.chatId == chatId }?.participantName ?: "Group"
                         messages.add(0, ChatMessage(
                             id = "sys_created",
                             text = "Group \"$groupName\" created",
@@ -266,7 +310,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                     }
                     _messages.value = messages
                 } else {
-                    Log.e(TAG, "Failed to load messages: ${response.code()}")
+                    Log.e(TAG, "Failed to load messages: ${result.exceptionOrNull()?.message}")
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to load messages", e)
@@ -278,10 +322,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         val token = accessToken ?: return
         viewModelScope.launch {
             try {
-                api.markChatAsRead("Bearer $token", chatId)
-                _chats.value = _chats.value.map {
-                    if (it.chatId == chatId) it.copy(unreadCount = 0) else it
-                }
+                chatRepository.markChatAsRead(token, chatId)
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to mark as read", e)
             }
@@ -291,6 +332,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     fun leaveRoom() {
         currentChatId?.let { SocketManager.leaveRoom(it) }
         currentChatId = null
+        _currentChatId.value = null
         _isTyping.value = false
     }
 
@@ -299,19 +341,30 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         if (content.isBlank()) return
 
         val name = currentUserName ?: ""
-        val message = ChatMessage(
+        val now = currentTimeIso()
+        val messageEntity = MessageEntity(
             id = "temp_${System.currentTimeMillis()}",
-            text = content,
-            isFromMe = true,
-            timestamp = currentTime(),
+            chatId = chatId,
+            senderId = currentUserId ?: "",
             senderName = name,
-            senderInitial = name.take(1).uppercase(),
-            senderId = currentUserId ?: ""
+            content = content,
+            timestamp = formatTimestamp(now),
+            createdAt = now,
+            isFromMe = true,
+            isSystem = false
         )
-        _messages.value = _messages.value + message
+
+        // Optimistically add to UI
+        _messages.value = _messages.value + messageEntity.toChatMessage()
+
+        viewModelScope.launch {
+            // Insert into Room
+            chatRepository.insertMessage(messageEntity)
+            // Update chat last message
+            chatRepository.updateChatLastMessage(chatId, content, formatTimestamp(now))
+        }
 
         SocketManager.sendMessage(chatId, content)
-        updateChatLastMessage(chatId, content, currentTime())
     }
 
     fun sendTyping(isTyping: Boolean) {
@@ -319,7 +372,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun getParticipantName(chatId: String): String {
-        return _chats.value.find { it.chatId == chatId }?.participantName ?: "Chat"
+        return chats.value.find { it.chatId == chatId }?.participantName ?: "Chat"
     }
 
     fun refreshChats() {
@@ -329,12 +382,11 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     fun getCurrentUserId(): String? = currentUserId
 
     fun isGroupChat(chatId: String): Boolean {
-        val preview = _chats.value.find { it.chatId == chatId }
+        val preview = chats.value.find { it.chatId == chatId }
         if (preview?.isGroup == true) return true
-        val response = chatResponseMap[chatId]
-        if (response != null) {
-            return response.isGroup || !response.name.isNullOrBlank() ||
-                    response.participants.size > 2 || !response.admins.isNullOrEmpty()
+        val entity = chatEntityCache[chatId]
+        if (entity != null) {
+            return entity.isGroup || entity.getParticipants().size > 2 || entity.adminsJson.isNotBlank()
         }
         return false
     }
@@ -343,10 +395,9 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         val token = accessToken ?: run { onResult(false); return }
         viewModelScope.launch {
             try {
-                val response = api.leaveGroupChat("Bearer $token", chatId)
-                if (response.isSuccessful) {
-                    _chats.value = _chats.value.filter { it.chatId != chatId }
-                    chatResponseMap.remove(chatId)
+                val result = chatRepository.leaveGroupChat(token, chatId)
+                if (result.isSuccess) {
+                    chatEntityCache.remove(chatId)
                     onResult(true)
                 } else {
                     onResult(false)
@@ -394,12 +445,10 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun findExistingChatWithUser(userId: String): String? {
-        for ((chatId, chatResponse) in chatResponseMap) {
-            val isGroup = chatResponse.isGroup || !chatResponse.name.isNullOrBlank() ||
-                    chatResponse.participants.size > 2 || !chatResponse.admins.isNullOrEmpty()
-            if (isGroup) continue
-            val hasUser = chatResponse.participants.any { it.id == userId }
-            if (hasUser) return chatId
+        for ((chatId, entity) in chatEntityCache) {
+            if (entity.isGroup) continue
+            val memberIds = entity.getMemberIds()
+            if (memberIds.contains(userId)) return chatId
         }
         return null
     }
@@ -414,17 +463,12 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         val token = accessToken ?: run { onResult(null); return }
         viewModelScope.launch {
             try {
-                val response = api.createOrGetChat("Bearer $token", CreateChatRequest(userId))
-                if (response.isSuccessful) {
-                    val chat = response.body()
-                    if (chat != null) {
-                        chatResponseMap[chat.id] = chat
-                        val preview = chat.toChatPreview()
-                        val existing = _chats.value.any { it.chatId == preview.chatId }
-                        if (!existing) {
-                            _chats.value = listOf(preview) + _chats.value
-                        }
-                        onResult(chat.id)
+                val result = chatRepository.createOrGetChat(token, userId)
+                if (result.isSuccess) {
+                    val entity = result.getOrNull()
+                    if (entity != null) {
+                        chatEntityCache[entity.id] = entity
+                        onResult(entity.id)
                     } else {
                         onResult(null)
                     }
@@ -441,20 +485,12 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         val token = accessToken ?: run { onResult(null); return }
         viewModelScope.launch {
             try {
-                val response = api.createGroupChat(
-                    "Bearer $token",
-                    CreateGroupChatRequest(name, userIds)
-                )
-                if (response.isSuccessful) {
-                    val chat = response.body()
-                    if (chat != null) {
-                        chatResponseMap[chat.id] = chat
-                        val preview = chat.toChatPreview()
-                        val existing = _chats.value.any { it.chatId == preview.chatId }
-                        if (!existing) {
-                            _chats.value = listOf(preview) + _chats.value
-                        }
-                        onResult(chat.id)
+                val result = chatRepository.createGroupChat(token, name, userIds)
+                if (result.isSuccess) {
+                    val entity = result.getOrNull()
+                    if (entity != null) {
+                        chatEntityCache[entity.id] = entity
+                        onResult(entity.id)
                     } else {
                         onResult(null)
                     }
@@ -469,38 +505,28 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
 
     // --- Mappers ---
 
-    private fun ChatResponse.toChatPreview(): ChatPreview {
-        val isGroupChat = isGroup || !name.isNullOrBlank() || participants.size > 2 || !admins.isNullOrEmpty()
-        val displayName = if (isGroupChat && !name.isNullOrBlank()) {
-            name
-        } else {
-            val other = participants.firstOrNull { it.id != currentUserId }
-                ?: participants.firstOrNull()
-            other?.username ?: "Unknown"
-        }
-        val other = participants.firstOrNull { it.id != currentUserId }
-            ?: participants.firstOrNull()
+    private fun ChatEntity.toChatPreview(): ChatPreview {
         return ChatPreview(
             chatId = id,
-            participantName = displayName,
-            participantImageUrl = other?.profileImageUrl,
-            lastMessage = lastMessage?.content ?: "",
-            timestamp = formatTimestamp(lastMessage?.createdAt ?: updatedAt),
-            unreadCount = unreadCount?.get(currentUserId) ?: 0,
-            isGroup = isGroupChat
+            participantName = name,
+            participantImageUrl = avatarUrl,
+            lastMessage = lastMessage,
+            timestamp = lastMessageTime,
+            unreadCount = unreadCount,
+            isGroup = isGroup
         )
     }
 
-    private fun ChatMessageResponse.toChatMessage(): ChatMessage {
-        val name = senderId?.username ?: ""
+    private fun MessageEntity.toChatMessage(): ChatMessage {
         return ChatMessage(
             id = id,
             text = content,
-            isFromMe = senderId?.id == currentUserId,
-            timestamp = formatTimestamp(createdAt),
-            senderName = name,
-            senderInitial = name.take(1).uppercase(),
-            senderId = senderId?.id ?: ""
+            isFromMe = isFromMe,
+            timestamp = timestamp,
+            senderName = senderName,
+            senderInitial = senderName.take(1).uppercase(),
+            senderId = senderId,
+            isSystem = isSystem
         )
     }
 
@@ -523,18 +549,8 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    private fun updateChatLastMessage(chatId: String, lastMessage: String, timestamp: String) {
-        _chats.value = _chats.value.map { chat ->
-            if (chat.chatId == chatId) {
-                chat.copy(lastMessage = lastMessage, timestamp = timestamp)
-            } else {
-                chat
-            }
-        }
-    }
-
-    private fun currentTime(): String {
-        return SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date())
+    private fun currentTimeIso(): String {
+        return SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).format(Date())
     }
 
     private fun formatTimestamp(timestamp: String): String {

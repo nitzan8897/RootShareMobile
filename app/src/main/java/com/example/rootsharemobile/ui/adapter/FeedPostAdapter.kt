@@ -53,10 +53,8 @@ class FeedPostAdapter(
             val username = post.authorUsername
             val imageUrl = post.authorImageUrl?.let { ApiConfig.resolveImageUrl(it) }
 
-            // Show username or fall back to a placeholder
             binding.textAuthorName.text = if (!username.isNullOrBlank()) username else "Community Member"
 
-            // Avatar: try to load profile image; fall back to letter initial
             if (!imageUrl.isNullOrBlank()) {
                 binding.imageAuthorAvatar.visibility = View.VISIBLE
                 Glide.with(binding.imageAuthorAvatar.context)
@@ -75,13 +73,9 @@ class FeedPostAdapter(
         }
 
         private fun bindPostContent(post: PostEntity) {
-            // Post type badge
             binding.textPostType.text = post.typeBadge
-
-            // Post content
             binding.textContent.text = post.content
 
-            // Plant name (optional)
             if (!post.plantName.isNullOrBlank()) {
                 binding.textPlantName.text = post.plantName
                 binding.textPlantName.visibility = View.VISIBLE
@@ -89,10 +83,8 @@ class FeedPostAdapter(
                 binding.textPlantName.visibility = View.GONE
             }
 
-            // Timestamp (YYYY-MM-DD)
             binding.textTimestamp.text = post.createdAt.take(10)
 
-            // Post image — shown only when the post has at least one image URL
             val firstImage = post.imagesJson.split(",").firstOrNull { it.isNotBlank() }
             if (firstImage != null) {
                 binding.imagePost.visibility = View.VISIBLE
@@ -108,7 +100,6 @@ class FeedPostAdapter(
         }
 
         private fun bindFooter(post: PostEntity) {
-            // Like button: filled red heart vs outline gray heart
             val heartIcon = if (post.isLikedByMe) {
                 R.drawable.ic_heart_filled
             } else {
@@ -117,12 +108,10 @@ class FeedPostAdapter(
             binding.btnLike.setImageResource(heartIcon)
             binding.btnLike.setOnClickListener { onLikeClick(post) }
 
-            // Like count
             binding.textLikes.text = binding.root.context.getString(
                 R.string.label_likes_count, post.likesCount
             )
 
-            // Comment button + count — both open the comments sheet
             binding.btnComment.setOnClickListener { onCommentClick(post) }
             binding.textComments.setOnClickListener { onCommentClick(post) }
             binding.textComments.text = binding.root.context.getString(

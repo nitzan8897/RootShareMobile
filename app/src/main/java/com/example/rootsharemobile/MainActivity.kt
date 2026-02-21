@@ -37,7 +37,6 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Inflate the root layout with ViewBinding
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -45,16 +44,12 @@ class MainActivity : AppCompatActivity() {
         // token-refresh interceptor has access to stored credentials.
         RetrofitClient.init(TokenManager(applicationContext))
 
-        // Obtain the NavController from the NavHostFragment
         val navHostFragment = supportFragmentManager
             .findFragmentById(R.id.nav_host_fragment) as NavHostFragment
         navController = navHostFragment.navController
 
-        // Connect the BottomNavigationView to the NavController.
-        // Menu item IDs must match Fragment/graph IDs in nav_graph.xml.
         binding.bottomNavigation.setupWithNavController(navController)
 
-        // Show/hide bottom nav based on the current destination
         navController.addOnDestinationChangedListener { _, destination, _ ->
             binding.bottomNavigation.visibility =
                 if (destination.id in mainDestinations) View.VISIBLE else View.GONE

@@ -57,14 +57,11 @@ data class Post(
     @SerializedName("updatedAt")
     val updatedAt: String = ""
 ) {
-    /** Convenience accessor — returns the author's ID string. */
     val userId: String get() = author?.id ?: ""
 
-    // UI helper: extract hashtags from content
     val tags: List<String>
         get() = Regex("#\\w+").findAll(content).map { it.value }.toList()
 
-    // UI helper: type badge text
     val typeBadge: String
         get() = when (type) {
             PostType.UPDATE -> "Update"
@@ -84,9 +81,6 @@ enum class PostType {
     GIVEAWAY
 }
 
-/**
- * DTO for creating a new post
- */
 data class CreatePostRequest(
     val plantId: String? = null,
     val type: PostType,
@@ -94,9 +88,6 @@ data class CreatePostRequest(
     val images: List<String>? = null
 )
 
-/**
- * DTO for updating an existing post
- */
 data class UpdatePostRequest(
     val plantId: String? = null,
     val type: PostType? = null,

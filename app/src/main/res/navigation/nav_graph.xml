@@ -74,6 +74,11 @@
         <action
             android:id="@+id/action_home_to_community"
             app:destination="@id/communityFragment" />
+
+        <!-- Navigate to post details, passing the post ID via SafeArgs -->
+        <action
+            android:id="@+id/action_home_to_post_details"
+            app:destination="@id/postDetailsFragment" />
     </fragment>
 
     <fragment
@@ -111,6 +116,18 @@
         <!-- SafeArgs: plant ID passed from MyGardenFragment -->
         <argument
             android:name="plantId"
+            app:argType="string" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/postDetailsFragment"
+        android:name="com.example.rootsharemobile.ui.fragment.home.PostDetailsFragment"
+        android:label="Post Details"
+        tools:layout="@layout/fragment_post_details">
+
+        <!-- SafeArgs: post ID passed from HomeFragment -->
+        <argument
+            android:name="postId"
             app:argType="string" />
     </fragment>
 

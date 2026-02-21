@@ -45,7 +45,6 @@ class FeaturedPlantsAdapter(
             binding.textPlantCategory.text = plant.displayCategory
             binding.textBadge.text = plant.badge
 
-            // Load plant image using Glide
             val imageUrl = ApiConfig.resolveImageUrl(plant.imageUrl)
             Glide.with(binding.imagePlant.context)
                 .load(imageUrl)
@@ -58,7 +57,6 @@ class FeaturedPlantsAdapter(
         }
     }
 
-    /** Efficient diffing: only update changed plant cards. */
     class PlantDiffCallback : DiffUtil.ItemCallback<PlantEntity>() {
         override fun areItemsTheSame(oldItem: PlantEntity, newItem: PlantEntity): Boolean =
             oldItem.id == newItem.id

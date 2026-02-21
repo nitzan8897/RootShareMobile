@@ -1,5 +1,6 @@
 package com.example.rootsharemobile.data.remote
 
+import com.google.gson.annotations.SerializedName
 import com.example.rootsharemobile.data.model.AuthResponse
 import com.example.rootsharemobile.data.model.ChatMessageResponse
 import com.example.rootsharemobile.data.model.ChatResponse
@@ -45,49 +46,31 @@ interface ApiService {
 
     // ==================== AUTH ====================
 
-    /**
-     * Register a new user.
-     */
     @POST("auth/register")
     suspend fun register(
         @Body request: RegisterRequest
     ): Response<AuthResponse>
 
-    /**
-     * Login with email and password.
-     */
     @POST("auth/login")
     suspend fun login(
         @Body request: LoginRequest
     ): Response<AuthResponse>
 
-    /**
-     * Refresh access token using refresh token.
-     */
     @POST("auth/refresh")
     suspend fun refreshToken(
         @Header("Authorization") refreshToken: String
     ): Response<RefreshTokenResponse>
 
-    /**
-     * Logout and invalidate refresh token.
-     */
     @POST("auth/logout")
     suspend fun logout(
         @Header("Authorization") token: String
     ): Response<Unit>
 
-    /**
-     * Get current authenticated user.
-     */
     @GET("auth/me")
     suspend fun getCurrentUser(
         @Header("Authorization") token: String
     ): Response<User>
 
-    /**
-     * Authenticate with Google ID token (for mobile).
-     */
     @POST("auth/google/token")
     suspend fun googleAuth(
         @Body request: GoogleTokenRequest
@@ -95,19 +78,12 @@ interface ApiService {
 
     // ==================== USERS ====================
 
-    /**
-     * Update the current user's profile (username, etc.).
-     */
     @retrofit2.http.PUT("users/profile")
     suspend fun updateProfile(
         @Header("Authorization") token: String,
         @Body body: Map<String, String>
     ): Response<User>
 
-    /**
-     * Upload a profile image (multipart).
-     * Returns the updated User with localProfileImageUrl set.
-     */
     @Multipart
     @POST("users/profile/image")
     suspend fun uploadProfileImage(
@@ -117,9 +93,6 @@ interface ApiService {
 
     // ==================== SPECIES ====================
 
-    /**
-     * Get all approved species.
-     */
     @GET("species")
     suspend fun getSpecies(
         @Header("Authorization") token: String
@@ -127,47 +100,30 @@ interface ApiService {
 
     // ==================== PLANTS ====================
 
-    /**
-     * Get all plants for the current authenticated user.
-     * @param status Optional filter by plant status
-     */
     @GET("plants")
     suspend fun getPlants(
         @Header("Authorization") token: String,
         @Query("status") status: PlantStatus? = null
     ): Response<List<Plant>>
 
-    /**
-     * Get featured plants from all users.
-     * @param limit Maximum number of plants to return (default: 10)
-     */
     @GET("plants/featured")
     suspend fun getFeaturedPlants(
         @Header("Authorization") token: String,
         @Query("limit") limit: Int? = null
     ): Response<List<Plant>>
 
-    /**
-     * Get a specific plant by ID.
-     */
     @GET("plants/{id}")
     suspend fun getPlantById(
         @Header("Authorization") token: String,
         @Path("id") id: String
     ): Response<Plant>
 
-    /**
-     * Create a new plant.
-     */
     @POST("plants")
     suspend fun createPlant(
         @Header("Authorization") token: String,
         @Body request: CreatePlantRequest
     ): Response<Plant>
 
-    /**
-     * Update an existing plant.
-     */
     @PATCH("plants/{id}")
     suspend fun updatePlant(
         @Header("Authorization") token: String,
@@ -175,9 +131,6 @@ interface ApiService {
         @Body request: UpdatePlantRequest
     ): Response<Plant>
 
-    /**
-     * Delete a plant.
-     */
     @DELETE("plants/{id}")
     suspend fun deletePlant(
         @Header("Authorization") token: String,
@@ -186,36 +139,23 @@ interface ApiService {
 
     // ==================== POSTS ====================
 
-    /**
-     * Get all posts (community feed).
-     * Returns posts sorted by createdAt descending (newest first).
-     */
     @GET("posts")
     suspend fun getPosts(
         @Header("Authorization") token: String
     ): Response<List<Post>>
 
-    /**
-     * Get a specific post by ID.
-     */
     @GET("posts/{id}")
     suspend fun getPostById(
         @Header("Authorization") token: String,
         @Path("id") id: String
     ): Response<Post>
 
-    /**
-     * Create a new post.
-     */
     @POST("posts")
     suspend fun createPost(
         @Header("Authorization") token: String,
         @Body request: CreatePostRequest
     ): Response<Post>
 
-    /**
-     * Update an existing post.
-     */
     @PATCH("posts/{id}")
     suspend fun updatePost(
         @Header("Authorization") token: String,
@@ -223,9 +163,6 @@ interface ApiService {
         @Body request: UpdatePostRequest
     ): Response<Post>
 
-    /**
-     * Delete a post.
-     */
     @DELETE("posts/{id}")
     suspend fun deletePost(
         @Header("Authorization") token: String,
@@ -234,18 +171,12 @@ interface ApiService {
 
     // ==================== COMMENTS ====================
 
-    /**
-     * Get all comments for a specific post.
-     */
     @GET("comments/post/{postId}")
     suspend fun getComments(
         @Header("Authorization") token: String,
         @Path("postId") postId: String
     ): Response<List<Comment>>
 
-    /**
-     * Create a new comment on a post.
-     */
     @POST("comments")
     suspend fun createComment(
         @Header("Authorization") token: String,
@@ -254,18 +185,12 @@ interface ApiService {
 
     // ==================== LIKES ====================
 
-    /**
-     * Toggle like/unlike for a post. Returns new liked status and updated count.
-     */
     @POST("likes/posts/{postId}/toggle")
     suspend fun togglePostLike(
         @Header("Authorization") token: String,
         @Path("postId") postId: String
     ): Response<ToggleLikeResponse>
 
-    /**
-     * Check whether the current user has liked a specific post.
-     */
     @GET("likes/posts/{postId}/is-liked")
     suspend fun isPostLiked(
         @Header("Authorization") token: String,
@@ -347,25 +272,18 @@ interface ApiService {
     ): Response<ChatResponse>
 }
 
-/**
- * Response for delete operations
- */
 data class DeleteResponse(
     val deleted: Boolean,
     val id: String
 )
 
-/**
- * Response from POST /likes/posts/:postId/toggle
- */
 data class ToggleLikeResponse(
+    @SerializedName("liked")
     val liked: Boolean = false,
+    @SerializedName("likesCount")
     val count: Int = 0
 )
 
-/**
- * Response from GET /likes/posts/:postId/is-liked
- */
 data class IsLikedResponse(
     val liked: Boolean = false
 )

@@ -4,9 +4,13 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import com.example.rootsharemobile.data.local.db.dao.ChatDao
+import com.example.rootsharemobile.data.local.db.dao.MessageDao
 import com.example.rootsharemobile.data.local.db.dao.PlantDao
 import com.example.rootsharemobile.data.local.db.dao.PostDao
 import com.example.rootsharemobile.data.local.db.dao.UserDao
+import com.example.rootsharemobile.data.local.db.entity.ChatEntity
+import com.example.rootsharemobile.data.local.db.entity.MessageEntity
 import com.example.rootsharemobile.data.local.db.entity.PlantEntity
 import com.example.rootsharemobile.data.local.db.entity.PostEntity
 import com.example.rootsharemobile.data.local.db.entity.UserEntity
@@ -22,8 +26,14 @@ import com.example.rootsharemobile.data.local.db.entity.UserEntity
  * Room fulfils that role exclusively.
  */
 @Database(
-    entities = [UserEntity::class, PlantEntity::class, PostEntity::class],
-    version = 2,
+    entities = [
+        UserEntity::class,
+        PlantEntity::class,
+        PostEntity::class,
+        ChatEntity::class,
+        MessageEntity::class
+    ],
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -31,6 +41,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun userDao(): UserDao
     abstract fun plantDao(): PlantDao
     abstract fun postDao(): PostDao
+    abstract fun chatDao(): ChatDao
+    abstract fun messageDao(): MessageDao
 
     companion object {
         private const val DATABASE_NAME = "rootshare_db"

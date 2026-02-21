@@ -31,7 +31,6 @@ data class Plant(
     @SerializedName("updatedAt")
     val updatedAt: String = ""
 ) {
-    // UI helper properties for display
     val displayTitle: String
         get() = name.take(20).let { if (name.length > 20) "$it..." else it }
 
@@ -57,18 +56,12 @@ enum class PlantStatus {
     GIFTED
 }
 
-/**
- * DTO for creating a new plant
- */
 data class CreatePlantRequest(
     val name: String,
     val species: String,
     val imageUrl: String
 )
 
-/**
- * DTO for updating an existing plant
- */
 data class UpdatePlantRequest(
     val name: String? = null,
     val species: String? = null,
