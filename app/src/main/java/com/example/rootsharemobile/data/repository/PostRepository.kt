@@ -51,7 +51,10 @@ class PostRepository(private val postDao: PostDao) {
         return try {
             val response = apiService.createPost("Bearer $token", request)
             if (response.isSuccessful && response.body() != null) {
-                val post = response.body()!!
+                val rawPost = response.body()!!
+                // Backend create() returns the raw document without populate(); re-fetch to get
+                // the full userId (PostAuthor) and plantId (Plant) objects so Room stores them correctly.
+                val post = refetchPost(token, rawPost.id) ?: rawPost
                 postDao.insertPosts(listOf(post.toEntity()))
                 Result.success(post)
             } else {
@@ -66,7 +69,8 @@ class PostRepository(private val postDao: PostDao) {
         return try {
             val response = apiService.updatePost("Bearer $token", postId, request)
             if (response.isSuccessful && response.body() != null) {
-                val post = response.body()!!
+                // Backend update() also returns an unpopulated document; re-fetch for full objects.
+                val post = refetchPost(token, postId) ?: response.body()!!
                 postDao.insertPosts(listOf(post.toEntity()))
                 Result.success(post)
             } else {
@@ -75,6 +79,14 @@ class PostRepository(private val postDao: PostDao) {
         } catch (e: Exception) {
             Result.failure(Exception(mapNetworkError(e)))
         }
+    }
+
+    /** Fetches a single post by ID so we get the fully-populated userId/plantId fields. */
+    private suspend fun refetchPost(token: String, postId: String): Post? = try {
+        val r = apiService.getPostById("Bearer $token", postId)
+        if (r.isSuccessful) r.body() else null
+    } catch (_: Exception) {
+        null
     }
 
     suspend fun deletePost(token: String, postId: String): Result<Unit> {
