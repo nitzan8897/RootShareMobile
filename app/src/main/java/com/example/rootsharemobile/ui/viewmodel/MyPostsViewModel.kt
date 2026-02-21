@@ -24,6 +24,12 @@ class MyPostsViewModel(application: Application) : AndroidViewModel(application)
 
     private val _currentUserId = MutableLiveData<String>()
 
+    init {
+        // Eagerly populate _currentUserId from the stored token so that userPosts/userPlants
+        // LiveData start emitting before the first explicit loadPosts() call.
+        viewModelScope.launch { initUserId() }
+    }
+
     sealed class PostsUiState {
         object Idle : PostsUiState()
         object Loading : PostsUiState()
