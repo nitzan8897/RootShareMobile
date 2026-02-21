@@ -2,10 +2,6 @@ package com.example.rootsharemobile.data.model
 
 import com.google.gson.annotations.SerializedName
 
-/**
- * Populated author object returned by the backend when fetching posts.
- * The backend populates the userId reference into a full user object.
- */
 data class PostAuthor(
     @SerializedName("_id")
     val id: String = "",
@@ -17,19 +13,17 @@ data class PostAuthor(
     val profileImageUrl: String? = null
 )
 
-/**
- * Data class representing a Post from the backend API.
- * Matches the backend schema at /api/posts
- *
- * The backend populates `userId` as a full user object via Mongoose `.populate()`,
- * so Gson maps it to [PostAuthor]. Use the computed [userId] property when you
- * need just the ID string (e.g. for Room queries).
- */
+
+ //Data class representing a Post from the backend API.
+ //Matches the backend schema at /api/posts
+ //The backend populates `userId` as a full user object via Mongoose `.populate()`,
+ //so Gson maps it to [PostAuthor]. Use the computed [userId] property when you
+ // need just the ID string (e.g. for Room queries).
+
 data class Post(
     @SerializedName("_id")
     val id: String = "",
 
-    /** Populated author — backend returns userId as { _id, username, profileImageUrl }. */
     @SerializedName("userId")
     val author: PostAuthor? = null,
 

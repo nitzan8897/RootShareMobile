@@ -10,6 +10,7 @@ import com.example.rootsharemobile.data.local.db.entity.PlantEntity
 import com.example.rootsharemobile.data.local.db.entity.PostEntity
 import com.example.rootsharemobile.data.repository.PlantRepository
 import com.example.rootsharemobile.data.repository.PostRepository
+import android.util.Log
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -130,10 +131,16 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
      * A per-post in-flight guard prevents duplicate requests from fast double-taps.
      */
     fun toggleLike(token: String, post: PostEntity) {
-        if (!pendingLikes.add(post.id)) return  // already in-flight, skip
+        Log.d("LIKE_DEBUG", "ViewModel: toggleLike called postId=${post.id} pendingLikes=$pendingLikes")
+        if (!pendingLikes.add(post.id)) {
+            Log.d("LIKE_DEBUG", "ViewModel: SKIPPED - already in-flight")
+            return
+        }
         viewModelScope.launch(Dispatchers.IO) {
+            Log.d("LIKE_DEBUG", "ViewModel: launching coroutine for postId=${post.id}")
             try {
-                postRepository.toggleLike(token, post)
+                val result = postRepository.toggleLike(token, post)
+                Log.d("LIKE_DEBUG", "ViewModel: toggleLike result=${result.isSuccess} err=${result.exceptionOrNull()?.message}")
             } finally {
                 withContext(Dispatchers.Main) { pendingLikes.remove(post.id) }
             }

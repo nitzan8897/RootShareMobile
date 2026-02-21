@@ -17,25 +17,14 @@ class PlantRepository(private val plantDao: PlantDao) {
 
     private val apiService = RetrofitClient.apiService
 
-    // -------------------------------------------------------------------------
-    // Room LiveData
-    // -------------------------------------------------------------------------
-
     fun observeFeaturedPlants(): LiveData<List<PlantEntity>> =
         plantDao.observeFeaturedPlants()
-
-    fun observeAllPlants(): LiveData<List<PlantEntity>> =
-        plantDao.observeAllPlants()
 
     fun observeGardenPlantsWithPostCount(userId: String): LiveData<List<PlantWithPostCount>> =
         plantDao.observeGardenPlantsWithPostCount(userId)
 
     fun observePlantWithPostCount(plantId: String): LiveData<PlantWithPostCount?> =
         plantDao.observePlantWithPostCount(plantId)
-
-    // -------------------------------------------------------------------------
-    // Species
-    // -------------------------------------------------------------------------
 
     suspend fun fetchSpecies(token: String): Result<List<Species>> {
         return try {
@@ -49,10 +38,6 @@ class PlantRepository(private val plantDao: PlantDao) {
             Result.failure(Exception(mapNetworkError(e)))
         }
     }
-
-    // -------------------------------------------------------------------------
-    // Network + cache operations
-    // -------------------------------------------------------------------------
 
     suspend fun fetchAndStoreFeaturedPlants(token: String, limit: Int? = null): Result<Unit> {
         return try {
@@ -132,12 +117,6 @@ class PlantRepository(private val plantDao: PlantDao) {
             Result.failure(Exception(mapNetworkError(e)))
         }
     }
-
-    suspend fun clearLocalCache() = plantDao.deleteAllPlants()
-
-    // -------------------------------------------------------------------------
-    // Mapper
-    // -------------------------------------------------------------------------
 
     private fun Plant.toEntity(isFeatured: Boolean) = PlantEntity(
         id = this.id,

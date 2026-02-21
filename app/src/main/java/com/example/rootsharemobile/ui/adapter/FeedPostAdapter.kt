@@ -1,5 +1,6 @@
 package com.example.rootsharemobile.ui.adapter
 
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -13,12 +14,6 @@ import com.example.rootsharemobile.data.local.db.entity.PostEntity
 import com.example.rootsharemobile.data.remote.ApiConfig
 import com.example.rootsharemobile.databinding.ItemFeedPostBinding
 
-/**
- * RecyclerView adapter for the vertical community-feed list on the Home screen.
- *
- * Uses [ListAdapter] with [DiffUtil] for efficient updates when Room emits
- * a new list. Images are loaded with Glide.
- */
 class FeedPostAdapter(
     private val onPostClick: (PostEntity) -> Unit = {},
     private val onLikeClick: (PostEntity) -> Unit = {},
@@ -106,7 +101,9 @@ class FeedPostAdapter(
                 R.drawable.ic_heart_outline
             }
             binding.btnLike.setImageResource(heartIcon)
-            binding.btnLike.setOnClickListener { onLikeClick(post) }
+            binding.btnLike.setOnClickListener {
+                onLikeClick(post)
+            }
 
             binding.textLikes.text = binding.root.context.getString(
                 R.string.label_likes_count, post.likesCount

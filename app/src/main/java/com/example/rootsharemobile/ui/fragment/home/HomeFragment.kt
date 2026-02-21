@@ -19,6 +19,7 @@ import com.example.rootsharemobile.ui.fragment.profile.AddEditPostBottomSheet
 import com.example.rootsharemobile.ui.viewmodel.AuthViewModel
 import com.example.rootsharemobile.ui.viewmodel.HomeViewModel
 import com.example.rootsharemobile.ui.viewmodel.MyPostsViewModel
+import android.util.Log
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.launch
 
@@ -96,8 +97,11 @@ class HomeFragment : Fragment() {
                 findNavController().navigate(action)
             },
             onLikeClick = { post ->
+                Log.d("LIKE_DEBUG", "Fragment: onLikeClick postId=${post.id}")
                 lifecycleScope.launch {
-                    val token = authViewModel.getAccessToken() ?: return@launch
+                    val token = authViewModel.getAccessToken()
+                    Log.d("LIKE_DEBUG", "Fragment: token=${if (token != null) "OK" else "NULL"}")
+                    if (token == null) return@launch
                     homeViewModel.toggleLike(token, post)
                 }
             },

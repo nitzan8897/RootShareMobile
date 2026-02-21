@@ -1,5 +1,6 @@
 package com.example.rootsharemobile.data.repository
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import com.example.rootsharemobile.data.local.db.dao.PostDao
 import com.example.rootsharemobile.data.local.db.entity.PostEntity
@@ -13,21 +14,9 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 
-/**
- * Repository for community post data.
- *
- * Enforces the offline-first pattern:
- *  1. Fetch from the remote API.
- *  2. Save to Room (Single Source of Truth).
- *  3. The UI observes Room LiveData exclusively.
- */
 class PostRepository(private val postDao: PostDao) {
 
     private val apiService = RetrofitClient.apiService
-
-    // -------------------------------------------------------------------------
-    // Room LiveData — observed by ViewModels.
-    // -------------------------------------------------------------------------
 
     fun observeAllPosts(): LiveData<List<PostEntity>> =
         postDao.observeAllPosts()
@@ -38,14 +27,6 @@ class PostRepository(private val postDao: PostDao) {
     fun observePostById(postId: String): LiveData<PostEntity?> =
         postDao.observePostById(postId)
 
-    // -------------------------------------------------------------------------
-    // Network + cache operations.
-    // -------------------------------------------------------------------------
-
-    /**
-     * Fetch all community posts from the API, persist them to Room,
-     * and return a success/failure result for error handling in the ViewModel.
-     */
     suspend fun fetchAndStorePosts(token: String): Result<Unit> {
         return try {
             val response = apiService.getPosts("Bearer $token")
@@ -66,9 +47,6 @@ class PostRepository(private val postDao: PostDao) {
         }
     }
 
-    /**
-     * Create a new post via the API and insert the result into Room.
-     */
     suspend fun createPost(token: String, request: CreatePostRequest): Result<Post> {
         return try {
             val response = apiService.createPost("Bearer $token", request)
@@ -113,38 +91,38 @@ class PostRepository(private val postDao: PostDao) {
         }
     }
 
-    /**
-     * Toggle the like on a post.
-     * Removed the optimistic update to prevent the UI from "jumping" when the
-     * server returns an error (like the current 500 Internal Server Error).
-     * The UI will now only update once the server confirms the operation.
-     */
     suspend fun toggleLike(token: String, post: PostEntity): Result<Unit> {
+        val wasLiked = post.isLikedByMe
+        val optimisticPost = post.copy(
+            isLikedByMe = !wasLiked,
+            likesCount = maxOf(0, if (wasLiked) post.likesCount - 1 else post.likesCount + 1)
+        )
+        Log.d("LIKE_DEBUG", "Repo: optimistic insert postId=${post.id} wasLiked=$wasLiked newCount=${optimisticPost.likesCount}")
+        postDao.insertPosts(listOf(optimisticPost))
+
         return try {
+            Log.d("LIKE_DEBUG", "Repo: calling togglePostLike API postId=${post.id}")
             val response = apiService.togglePostLike("Bearer $token", post.id)
+            Log.d("LIKE_DEBUG", "Repo: API response code=${response.code()} success=${response.isSuccessful}")
             if (response.isSuccessful) {
                 val body = response.body()
+                Log.d("LIKE_DEBUG", "Repo: body=$body liked=${body?.liked}")
                 if (body != null) {
-                    // Update Room only after a successful server response.
-                    postDao.insertPosts(listOf(post.copy(
-                        isLikedByMe = body.liked,
-                        likesCount = body.count
-                    )))
+                    postDao.updateIsLikedByMe(post.id, body.liked)
                 }
                 Result.success(Unit)
             } else {
+                Log.d("LIKE_DEBUG", "Repo: FAILED code=${response.code()}, rolling back")
+                postDao.insertPosts(listOf(post))
                 Result.failure(Exception(mapHttpError(response.code(), "like")))
             }
         } catch (e: Exception) {
+            Log.d("LIKE_DEBUG", "Repo: EXCEPTION ${e.javaClass.simpleName}: ${e.message}, rolling back")
+            postDao.insertPosts(listOf(post))
             Result.failure(Exception(mapNetworkError(e)))
         }
     }
 
-    /**
-     * Re-sync isLikedByMe for posts that have at least one like.
-     * Called after a fresh fetch so that like state is correct after re-login or
-     * on a new device. Runs all checks concurrently. Silently ignores failures.
-     */
     suspend fun syncLikeStatuses(token: String) {
         val postsToCheck = postDao.getPostsWithPositiveLikeCount()
         if (postsToCheck.isEmpty()) return
@@ -166,13 +144,6 @@ class PostRepository(private val postDao: PostDao) {
             }.awaitAll()
         }
     }
-
-    /** Clear the local post cache (called on logout). */
-    suspend fun clearLocalCache() = postDao.deleteAllPosts()
-
-    // -------------------------------------------------------------------------
-    // Mapper helpers
-    // -------------------------------------------------------------------------
 
     private fun Post.toEntity(isLikedByMe: Boolean = false) = PostEntity(
         id = this.id,
