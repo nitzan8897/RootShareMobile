@@ -9,6 +9,8 @@ import com.example.rootsharemobile.data.model.CreatePlantRequest
 import com.example.rootsharemobile.data.model.MakeAdminRequest
 import com.example.rootsharemobile.data.model.RemoveMemberRequest
 import com.example.rootsharemobile.data.model.RenameGroupRequest
+import com.example.rootsharemobile.data.model.Comment
+import com.example.rootsharemobile.data.model.CreateCommentRequest
 import com.example.rootsharemobile.data.model.CreatePostRequest
 import com.example.rootsharemobile.data.model.GoogleTokenRequest
 import com.example.rootsharemobile.data.model.LoginRequest
@@ -229,6 +231,26 @@ interface ApiService {
         @Header("Authorization") token: String,
         @Path("id") id: String
     ): Response<DeleteResponse>
+
+    // ==================== COMMENTS ====================
+
+    /**
+     * Get all comments for a specific post.
+     */
+    @GET("comments/post/{postId}")
+    suspend fun getComments(
+        @Header("Authorization") token: String,
+        @Path("postId") postId: String
+    ): Response<List<Comment>>
+
+    /**
+     * Create a new comment on a post.
+     */
+    @POST("comments")
+    suspend fun createComment(
+        @Header("Authorization") token: String,
+        @Body request: CreateCommentRequest
+    ): Response<Comment>
 
     // ==================== LIKES ====================
 

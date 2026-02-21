@@ -146,5 +146,6 @@
     <string name="cd_post_image">Post image</string>
     <string name="cd_google_logo">Google logo</string>
     <string name="cd_like_post">Like post</string>
+    <string name="cd_comment_post">Comment on post</string>
     <string name="cd_create_post">Create new post</string>
 </resources>

@@ -21,7 +21,8 @@ import com.example.rootsharemobile.databinding.ItemFeedPostBinding
  */
 class FeedPostAdapter(
     private val onPostClick: (PostEntity) -> Unit = {},
-    private val onLikeClick: (PostEntity) -> Unit = {}
+    private val onLikeClick: (PostEntity) -> Unit = {},
+    private val onCommentClick: (PostEntity) -> Unit = {}
 ) : ListAdapter<PostEntity, FeedPostAdapter.PostViewHolder>(PostDiffCallback()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PostViewHolder {
@@ -121,7 +122,9 @@ class FeedPostAdapter(
                 R.string.label_likes_count, post.likesCount
             )
 
-            // Comment count
+            // Comment button + count — both open the comments sheet
+            binding.btnComment.setOnClickListener { onCommentClick(post) }
+            binding.textComments.setOnClickListener { onCommentClick(post) }
             binding.textComments.text = binding.root.context.getString(
                 R.string.label_comments_count, post.commentsCount
             )

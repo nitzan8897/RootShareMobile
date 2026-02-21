@@ -49,6 +49,18 @@ interface PostDao {
     @Query("SELECT * FROM posts WHERE likesCount > 0")
     suspend fun getPostsWithPositiveLikeCount(): List<PostEntity>
 
+    /**
+     * Update only the isLikedByMe flag for a post.
+     * Used by syncLikeStatuses so it never touches likesCount,
+     * eliminating the race condition with optimistic like updates.
+     */
+    @Query("UPDATE posts SET isLikedByMe = :isLiked WHERE id = :postId")
+    suspend fun updateIsLikedByMe(postId: String, isLiked: Boolean)
+
+    /** Increment the cached comment count after a new comment is successfully posted. */
+    @Query("UPDATE posts SET commentsCount = commentsCount + 1 WHERE id = :postId")
+    suspend fun incrementCommentsCount(postId: String)
+
     @Query("DELETE FROM posts WHERE id = :postId")
     suspend fun deletePostById(postId: String)
 

@@ -88,12 +88,19 @@ class HomeFragment : Fragment() {
             adapter = plantsAdapter
         }
 
-        // Vertical community feed — like button routes through HomeViewModel
+        // Vertical community feed — like and comment buttons wired here
         feedAdapter = FeedPostAdapter(
             onLikeClick = { post ->
                 lifecycleScope.launch {
                     val token = authViewModel.getAccessToken() ?: return@launch
                     homeViewModel.toggleLike(token, post)
+                }
+            },
+            onCommentClick = { post ->
+                lifecycleScope.launch {
+                    val token = authViewModel.getAccessToken() ?: return@launch
+                    CommentsBottomSheet.newInstance(post.id, token)
+                        .show(parentFragmentManager, "comments_${post.id}")
                 }
             }
         )

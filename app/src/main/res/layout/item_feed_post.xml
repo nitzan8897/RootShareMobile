@@ -144,6 +144,18 @@
             app:layout_constraintStart_toEndOf="@id/btn_like"
             android:layout_marginStart="4dp" />
 
+        <ImageButton
+            android:id="@+id/btn_comment"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_comment"
+            android:contentDescription="@string/cd_comment_post"
+            app:layout_constraintTop_toTopOf="@id/btn_like"
+            app:layout_constraintBottom_toBottomOf="@id/btn_like"
+            app:layout_constraintStart_toEndOf="@id/text_likes"
+            android:layout_marginStart="16dp" />
+
         <TextView
             android:id="@+id/text_comments"
             android:layout_width="wrap_content"
@@ -152,8 +164,8 @@
             android:textColor="@color/gray_500"
             app:layout_constraintTop_toTopOf="@id/btn_like"
             app:layout_constraintBottom_toBottomOf="@id/btn_like"
-            app:layout_constraintStart_toEndOf="@id/text_likes"
-            android:layout_marginStart="16dp" />
+            app:layout_constraintStart_toEndOf="@id/btn_comment"
+            android:layout_marginStart="4dp" />
 
         <TextView
             android:id="@+id/text_timestamp"

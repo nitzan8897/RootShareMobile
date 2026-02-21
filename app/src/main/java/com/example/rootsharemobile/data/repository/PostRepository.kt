@@ -49,7 +49,7 @@ class PostRepository(private val postDao: PostDao) {
             if (response.isSuccessful) {
                 val posts = response.body() ?: emptyList()
                 // Preserve any locally-stored like state before wiping the cache,
-                // so optimistic updates survive a feed refresh.
+                // so the UI remains consistent during a feed refresh.
                 val likedIds = postDao.getLikedPostIds().toSet()
                 postDao.deleteAllPosts()
                 val entities = posts.map { it.toEntity(isLikedByMe = it.id in likedIds) }
@@ -112,40 +112,27 @@ class PostRepository(private val postDao: PostDao) {
 
     /**
      * Toggle the like on a post.
-     * Optimistically flips [isLikedByMe] and adjusts [likesCount] in Room before
-     * the API call so the UI feels instant. Rolls back on failure.
+     * Removed the optimistic update to prevent the UI from "jumping" when the
+     * server returns an error (like the current 500 Internal Server Error).
+     * The UI will now only update once the server confirms the operation.
      */
     suspend fun toggleLike(token: String, post: PostEntity): Result<Unit> {
-        val wasLiked = post.isLikedByMe
-        val optimisticPost = post.copy(
-            isLikedByMe = !wasLiked,
-            likesCount = if (wasLiked) post.likesCount - 1 else post.likesCount + 1
-        )
-        postDao.insertPosts(listOf(optimisticPost))
-
         return try {
             val response = apiService.togglePostLike("Bearer $token", post.id)
             if (response.isSuccessful) {
                 val body = response.body()
                 if (body != null) {
-                    // Only take isLikedByMe from the server — it's authoritative.
-                    // Keep the optimistic likesCount: the toggle endpoint's count
-                    // field may not map correctly (different key name, virtual field,
-                    // etc.) and would reset the count to 0.
-                    // The real count will sync on the next fetchAndStorePosts().
-                    postDao.insertPosts(listOf(optimisticPost.copy(
-                        isLikedByMe = body.liked
+                    // Update Room only after a successful server response.
+                    postDao.insertPosts(listOf(post.copy(
+                        isLikedByMe = body.liked,
+                        likesCount = body.count
                     )))
                 }
                 Result.success(Unit)
             } else {
-                // Roll back optimistic update
-                postDao.insertPosts(listOf(post))
                 Result.failure(Exception(mapHttpError(response.code(), "like")))
             }
         } catch (e: Exception) {
-            // Roll back optimistic update
-            postDao.insertPosts(listOf(post))
             Result.failure(Exception(mapNetworkError(e)))
         }
     }
@@ -166,7 +153,7 @@ class PostRepository(private val postDao: PostDao) {
                         if (response.isSuccessful) {
                             val liked = response.body()?.liked ?: false
                             if (liked != post.isLikedByMe) {
-                                postDao.insertPosts(listOf(post.copy(isLikedByMe = liked)))
+                                postDao.updateIsLikedByMe(post.id, liked)
                             }
                         }
                     } catch (_: Exception) {
