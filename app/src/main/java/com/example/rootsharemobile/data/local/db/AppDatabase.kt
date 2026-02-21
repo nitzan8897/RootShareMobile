@@ -23,7 +23,7 @@ import com.example.rootsharemobile.data.local.db.entity.UserEntity
  */
 @Database(
     entities = [UserEntity::class, PlantEntity::class, PostEntity::class],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -53,7 +53,9 @@ abstract class AppDatabase : RoomDatabase() {
                 context.applicationContext,
                 AppDatabase::class.java,
                 DATABASE_NAME
-            ).build()
+            )
+                .fallbackToDestructiveMigration()
+                .build()
         }
     }
 }

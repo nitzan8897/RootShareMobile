@@ -229,6 +229,27 @@ interface ApiService {
         @Header("Authorization") token: String,
         @Path("id") id: String
     ): Response<DeleteResponse>
+
+    // ==================== LIKES ====================
+
+    /**
+     * Toggle like/unlike for a post. Returns new liked status and updated count.
+     */
+    @POST("likes/posts/{postId}/toggle")
+    suspend fun togglePostLike(
+        @Header("Authorization") token: String,
+        @Path("postId") postId: String
+    ): Response<ToggleLikeResponse>
+
+    /**
+     * Check whether the current user has liked a specific post.
+     */
+    @GET("likes/posts/{postId}/is-liked")
+    suspend fun isPostLiked(
+        @Header("Authorization") token: String,
+        @Path("postId") postId: String
+    ): Response<IsLikedResponse>
+
     // ==================== USERS ====================
 
     @GET("users/search")
@@ -310,4 +331,19 @@ interface ApiService {
 data class DeleteResponse(
     val deleted: Boolean,
     val id: String
+)
+
+/**
+ * Response from POST /likes/posts/:postId/toggle
+ */
+data class ToggleLikeResponse(
+    val liked: Boolean = false,
+    val count: Int = 0
+)
+
+/**
+ * Response from GET /likes/posts/:postId/is-liked
+ */
+data class IsLikedResponse(
+    val liked: Boolean = false
 )

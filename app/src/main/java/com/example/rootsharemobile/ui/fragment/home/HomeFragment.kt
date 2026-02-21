@@ -5,17 +5,19 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
-import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.rootsharemobile.R
 import com.example.rootsharemobile.databinding.FragmentHomeBinding
 import com.example.rootsharemobile.ui.adapter.FeaturedPlantsAdapter
 import com.example.rootsharemobile.ui.adapter.FeedPostAdapter
+import com.example.rootsharemobile.ui.fragment.profile.AddEditPostBottomSheet
 import com.example.rootsharemobile.ui.viewmodel.AuthViewModel
 import com.example.rootsharemobile.ui.viewmodel.HomeViewModel
+import com.example.rootsharemobile.ui.viewmodel.MyPostsViewModel
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.launch
 
@@ -26,6 +28,7 @@ import kotlinx.coroutines.launch
  *  - A personalised welcome banner (username received via SafeArgs).
  *  - A horizontal RecyclerView of featured plants (from Room via HomeViewModel).
  *  - A vertical RecyclerView of community feed posts (from Room via HomeViewModel).
+ *  - A FAB to create a new post (launches AddEditPostBottomSheet).
  *
  * The Fragment ONLY observes LiveData — it never calls the API or Room directly.
  */
@@ -39,6 +42,7 @@ class HomeFragment : Fragment() {
 
     private val homeViewModel: HomeViewModel by viewModels()
     private val authViewModel: AuthViewModel by viewModels()
+    private val myPostsViewModel: MyPostsViewModel by activityViewModels()
 
     private lateinit var plantsAdapter: FeaturedPlantsAdapter
     private lateinit var feedAdapter: FeedPostAdapter
@@ -59,6 +63,7 @@ class HomeFragment : Fragment() {
         setupRecyclerViews()
         observeViewModel()
         setupSwipeToRefresh()
+        setupFab()
         fetchInitialData()
     }
 
@@ -83,12 +88,38 @@ class HomeFragment : Fragment() {
             adapter = plantsAdapter
         }
 
-        // Vertical community feed
-        feedAdapter = FeedPostAdapter()
+        // Vertical community feed — like button routes through HomeViewModel
+        feedAdapter = FeedPostAdapter(
+            onLikeClick = { post ->
+                lifecycleScope.launch {
+                    val token = authViewModel.getAccessToken() ?: return@launch
+                    homeViewModel.toggleLike(token, post)
+                }
+            }
+        )
         binding.recyclerFeedPosts.apply {
             layoutManager = LinearLayoutManager(requireContext())
             adapter = feedAdapter
             isNestedScrollingEnabled = false
+        }
+    }
+
+    private fun setupFab() {
+        binding.fabAddPost.setOnClickListener {
+            // Ensure MyPostsViewModel knows the current user so the plant dropdown works
+            lifecycleScope.launch {
+                myPostsViewModel.initUserId()
+                AddEditPostBottomSheet.newAddInstance()
+                    .show(parentFragmentManager, "add_post_home")
+            }
+        }
+
+        // Show a snackbar when a post is created from this screen
+        myPostsViewModel.snackMessage.observe(viewLifecycleOwner) { message ->
+            if (!message.isNullOrBlank()) {
+                Snackbar.make(binding.root, message, Snackbar.LENGTH_SHORT).show()
+                myPostsViewModel.clearSnackMessage()
+            }
         }
     }
 
@@ -157,11 +188,6 @@ class HomeFragment : Fragment() {
     // Data loading
     // -------------------------------------------------------------------------
 
-    /**
-     * Trigger the initial data fetch.
-     * The ViewModel fetches from the API, saves to Room, and Room LiveData
-     * above delivers the result back to this Fragment automatically.
-     */
     private fun fetchInitialData() {
         lifecycleScope.launch {
             val token = authViewModel.getAccessToken() ?: return@launch

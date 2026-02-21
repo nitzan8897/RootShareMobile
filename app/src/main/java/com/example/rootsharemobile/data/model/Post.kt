@@ -3,15 +3,35 @@ package com.example.rootsharemobile.data.model
 import com.google.gson.annotations.SerializedName
 
 /**
+ * Populated author object returned by the backend when fetching posts.
+ * The backend populates the userId reference into a full user object.
+ */
+data class PostAuthor(
+    @SerializedName("_id")
+    val id: String = "",
+
+    @SerializedName("username")
+    val username: String = "",
+
+    @SerializedName("profileImageUrl")
+    val profileImageUrl: String? = null
+)
+
+/**
  * Data class representing a Post from the backend API.
  * Matches the backend schema at /api/posts
+ *
+ * The backend populates `userId` as a full user object via Mongoose `.populate()`,
+ * so Gson maps it to [PostAuthor]. Use the computed [userId] property when you
+ * need just the ID string (e.g. for Room queries).
  */
 data class Post(
     @SerializedName("_id")
     val id: String = "",
 
+    /** Populated author — backend returns userId as { _id, username, profileImageUrl }. */
     @SerializedName("userId")
-    val userId: String = "",
+    val author: PostAuthor? = null,
 
     @SerializedName("plantId")
     val plant: Plant? = null,
@@ -37,6 +57,9 @@ data class Post(
     @SerializedName("updatedAt")
     val updatedAt: String = ""
 ) {
+    /** Convenience accessor — returns the author's ID string. */
+    val userId: String get() = author?.id ?: ""
+
     // UI helper: extract hashtags from content
     val tags: List<String>
         get() = Regex("#\\w+").findAll(content).map { it.value }.toList()

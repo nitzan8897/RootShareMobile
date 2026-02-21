@@ -41,6 +41,14 @@ interface PostDao {
     @Query("SELECT * FROM posts WHERE id = :postId LIMIT 1")
     suspend fun getPostById(postId: String): PostEntity?
 
+    /** Returns the IDs of all posts the current user has liked locally. */
+    @Query("SELECT id FROM posts WHERE isLikedByMe = 1")
+    suspend fun getLikedPostIds(): List<String>
+
+    /** Returns all posts that have at least one like (used for server sync after re-login). */
+    @Query("SELECT * FROM posts WHERE likesCount > 0")
+    suspend fun getPostsWithPositiveLikeCount(): List<PostEntity>
+
     @Query("DELETE FROM posts WHERE id = :postId")
     suspend fun deletePostById(postId: String)
 

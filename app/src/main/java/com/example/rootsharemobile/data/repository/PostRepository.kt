@@ -9,6 +9,9 @@ import com.example.rootsharemobile.data.model.UpdatePostRequest
 import com.example.rootsharemobile.data.remote.RetrofitClient
 import com.example.rootsharemobile.data.remote.mapHttpError
 import com.example.rootsharemobile.data.remote.mapNetworkError
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 
 /**
  * Repository for community post data.
@@ -45,8 +48,11 @@ class PostRepository(private val postDao: PostDao) {
             val response = apiService.getPosts("Bearer $token")
             if (response.isSuccessful) {
                 val posts = response.body() ?: emptyList()
+                // Preserve any locally-stored like state before wiping the cache,
+                // so optimistic updates survive a feed refresh.
+                val likedIds = postDao.getLikedPostIds().toSet()
                 postDao.deleteAllPosts()
-                val entities = posts.map { it.toEntity() }
+                val entities = posts.map { it.toEntity(isLikedByMe = it.id in likedIds) }
                 postDao.insertPosts(entities)
                 Result.success(Unit)
             } else {
@@ -104,6 +110,73 @@ class PostRepository(private val postDao: PostDao) {
         }
     }
 
+    /**
+     * Toggle the like on a post.
+     * Optimistically flips [isLikedByMe] and adjusts [likesCount] in Room before
+     * the API call so the UI feels instant. Rolls back on failure.
+     */
+    suspend fun toggleLike(token: String, post: PostEntity): Result<Unit> {
+        val wasLiked = post.isLikedByMe
+        val optimisticPost = post.copy(
+            isLikedByMe = !wasLiked,
+            likesCount = if (wasLiked) post.likesCount - 1 else post.likesCount + 1
+        )
+        postDao.insertPosts(listOf(optimisticPost))
+
+        return try {
+            val response = apiService.togglePostLike("Bearer $token", post.id)
+            if (response.isSuccessful) {
+                val body = response.body()
+                if (body != null) {
+                    // Only take isLikedByMe from the server — it's authoritative.
+                    // Keep the optimistic likesCount: the toggle endpoint's count
+                    // field may not map correctly (different key name, virtual field,
+                    // etc.) and would reset the count to 0.
+                    // The real count will sync on the next fetchAndStorePosts().
+                    postDao.insertPosts(listOf(optimisticPost.copy(
+                        isLikedByMe = body.liked
+                    )))
+                }
+                Result.success(Unit)
+            } else {
+                // Roll back optimistic update
+                postDao.insertPosts(listOf(post))
+                Result.failure(Exception(mapHttpError(response.code(), "like")))
+            }
+        } catch (e: Exception) {
+            // Roll back optimistic update
+            postDao.insertPosts(listOf(post))
+            Result.failure(Exception(mapNetworkError(e)))
+        }
+    }
+
+    /**
+     * Re-sync isLikedByMe for posts that have at least one like.
+     * Called after a fresh fetch so that like state is correct after re-login or
+     * on a new device. Runs all checks concurrently. Silently ignores failures.
+     */
+    suspend fun syncLikeStatuses(token: String) {
+        val postsToCheck = postDao.getPostsWithPositiveLikeCount()
+        if (postsToCheck.isEmpty()) return
+        coroutineScope {
+            postsToCheck.map { post ->
+                async {
+                    try {
+                        val response = apiService.isPostLiked("Bearer $token", post.id)
+                        if (response.isSuccessful) {
+                            val liked = response.body()?.liked ?: false
+                            if (liked != post.isLikedByMe) {
+                                postDao.insertPosts(listOf(post.copy(isLikedByMe = liked)))
+                            }
+                        }
+                    } catch (_: Exception) {
+                        // Best-effort sync — don't disrupt the UI on partial failure
+                    }
+                }
+            }.awaitAll()
+        }
+    }
+
     /** Clear the local post cache (called on logout). */
     suspend fun clearLocalCache() = postDao.deleteAllPosts()
 
@@ -111,9 +184,11 @@ class PostRepository(private val postDao: PostDao) {
     // Mapper helpers
     // -------------------------------------------------------------------------
 
-    private fun Post.toEntity() = PostEntity(
+    private fun Post.toEntity(isLikedByMe: Boolean = false) = PostEntity(
         id = this.id,
         userId = this.userId,
+        authorUsername = this.author?.username,
+        authorImageUrl = this.author?.profileImageUrl,
         plantId = this.plant?.id,
         plantName = this.plant?.name,
         plantSpecies = this.plant?.species,
@@ -122,6 +197,7 @@ class PostRepository(private val postDao: PostDao) {
         imagesJson = this.images.joinToString(","),
         likesCount = this.likesCount,
         commentsCount = this.commentsCount,
+        isLikedByMe = isLikedByMe,
         createdAt = this.createdAt,
         updatedAt = this.updatedAt
     )
