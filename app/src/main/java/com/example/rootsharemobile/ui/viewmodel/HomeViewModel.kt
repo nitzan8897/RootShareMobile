@@ -10,7 +10,11 @@ import com.example.rootsharemobile.data.local.db.entity.PlantEntity
 import com.example.rootsharemobile.data.local.db.entity.PostEntity
 import com.example.rootsharemobile.data.repository.PlantRepository
 import com.example.rootsharemobile.data.repository.PostRepository
+import android.util.Log
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.util.Collections
 
 /**
  * ViewModel for the Home screen.
@@ -62,6 +66,10 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     val feedPosts: LiveData<List<PostEntity>> =
         postRepository.observeAllPosts()
 
+    /** Observe a single post by ID (for detail view). */
+    fun observePostById(postId: String): LiveData<PostEntity?> =
+        postRepository.observePostById(postId)
+
     private val _uiState = MutableLiveData<HomeUiState>()
     val uiState: LiveData<HomeUiState> = _uiState
 
@@ -77,6 +85,10 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     // Prevents redundant API calls when switching tabs — Room LiveData delivers
     // cached data instantly, so the UI still feels snappy on return visits.
     private var hasInitiallyLoaded = false
+
+    // Post IDs for which a like toggle is currently in-flight.
+    // Prevents duplicate API calls from fast double-taps.
+    private val pendingLikes: MutableSet<String> = Collections.synchronizedSet(mutableSetOf())
 
     // -------------------------------------------------------------------------
     // Operations called by HomeFragment
@@ -113,6 +125,28 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         _errorMessage.value = null
     }
 
+    /**
+     * Toggle the like on a post. Uses optimistic UI via the repository.
+     * Room LiveData updates the adapter automatically after the DB write.
+     * A per-post in-flight guard prevents duplicate requests from fast double-taps.
+     */
+    fun toggleLike(token: String, post: PostEntity) {
+        Log.d("LIKE_DEBUG", "ViewModel: toggleLike called postId=${post.id} pendingLikes=$pendingLikes")
+        if (!pendingLikes.add(post.id)) {
+            Log.d("LIKE_DEBUG", "ViewModel: SKIPPED - already in-flight")
+            return
+        }
+        viewModelScope.launch(Dispatchers.IO) {
+            Log.d("LIKE_DEBUG", "ViewModel: launching coroutine for postId=${post.id}")
+            try {
+                val result = postRepository.toggleLike(token, post)
+                Log.d("LIKE_DEBUG", "ViewModel: toggleLike result=${result.isSuccess} err=${result.exceptionOrNull()?.message}")
+            } finally {
+                withContext(Dispatchers.Main) { pendingLikes.remove(post.id) }
+            }
+        }
+    }
+
     // -------------------------------------------------------------------------
     // Private helpers
     // -------------------------------------------------------------------------
@@ -123,12 +157,15 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         _isLoadingPlants.value = false
 
         result.onFailure { error ->
+            // Show a transient Snackbar only — Room LiveData still delivers cached plants.
+            // Never show a full-screen error here; Glide image failures are completely
+            // isolated in the adapter and cannot reach this code path.
             _errorMessage.value = error.message
-            _uiState.value = HomeUiState.Error(error.message ?: "Failed to load plants.")
         }
 
-        // If plants succeeded but posts haven't been set yet, update the state
-        if (result.isSuccess && _uiState.value is HomeUiState.Loading) {
+        // Always exit Loading state so the swipe-refresh spinner stops and
+        // the RecyclerViews (populated by Room LiveData) become visible.
+        if (_uiState.value is HomeUiState.Loading) {
             _uiState.value = HomeUiState.Success
         }
     }
@@ -136,13 +173,24 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private suspend fun loadFeedPosts(token: String) {
         _isLoadingPosts.value = true
         val result = postRepository.fetchAndStorePosts(token)
+
+        if (result.isSuccess) {
+            // Re-sync like state from server — handles re-login and cross-device scenarios.
+            // Runs concurrently for all posts with likes; failures are silent.
+            postRepository.syncLikeStatuses(token)
+        }
+
         _isLoadingPosts.value = false
 
         result.fold(
             onSuccess = { _uiState.value = HomeUiState.Success },
             onFailure = { error ->
+                // Same principle: Snackbar for transient network errors,
+                // never a full-screen error while cached posts may be shown.
                 _errorMessage.value = error.message
-                _uiState.value = HomeUiState.Error(error.message ?: "Failed to load posts.")
+                if (_uiState.value is HomeUiState.Loading) {
+                    _uiState.value = HomeUiState.Success
+                }
             }
         )
     }

@@ -2,6 +2,7 @@ package com.example.rootsharemobile.data.remote
 
 import okhttp3.ResponseBody
 import org.json.JSONObject
+import java.io.IOException
 import java.net.ConnectException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
@@ -44,8 +45,9 @@ fun parseErrorBody(errorBody: ResponseBody?): String? {
 fun mapNetworkError(e: Exception): String {
     return when (e) {
         is UnknownHostException -> "No internet connection. Please check your network."
-        is ConnectException -> "Could not connect to server. Please try again later."
+        is ConnectException    -> "Could not connect to server. Please try again later."
         is SocketTimeoutException -> "Connection timed out. Please try again."
-        else -> "Network error. Please check your connection and try again."
+        is IOException         -> "Network error. Please try again later."
+        else                   -> "Unexpected error: ${e.javaClass.simpleName}"
     }
 }

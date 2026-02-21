@@ -17,6 +17,9 @@ data class PostEntity(
     @PrimaryKey
     val id: String,
     val userId: String,
+    /** Denormalised author fields — populated from backend's userId object. */
+    val authorUsername: String?,
+    val authorImageUrl: String?,
     /** Denormalised plant fields — null when no plant is attached. */
     val plantId: String?,
     val plantName: String?,
@@ -27,6 +30,8 @@ data class PostEntity(
     val imagesJson: String,
     val likesCount: Int,
     val commentsCount: Int,
+    /** Whether the currently logged-in user has liked this post. */
+    val isLikedByMe: Boolean = false,
     val createdAt: String,
     val updatedAt: String
 ) {

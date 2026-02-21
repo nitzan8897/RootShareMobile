@@ -17,6 +17,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.rootsharemobile.R
+import com.example.rootsharemobile.data.local.db.entity.ChatEntity
 import com.example.rootsharemobile.databinding.DialogGroupInfoBinding
 import com.example.rootsharemobile.ui.screens.chat.adapter.GroupMemberAdapter
 import com.example.rootsharemobile.ui.screens.chat.adapter.GroupMemberItem
@@ -125,15 +126,17 @@ class GroupInfoDialogFragment : DialogFragment() {
         }
     }
 
-    private fun updateUI(chat: com.example.rootsharemobile.data.model.ChatResponse) {
+    private fun updateUI(chat: ChatEntity) {
         // Group info header
-        val groupName = chat.name ?: "Group"
+        val groupName = chat.name.ifBlank { "Group" }
         binding.groupNameText.text = groupName
         binding.groupInitial.text = groupName.take(1).uppercase()
-        binding.memberCountText.text = "${chat.participants.size} members"
+
+        val participants = chat.getParticipants()
+        binding.memberCountText.text = "${participants.size} members"
 
         // Build member list sorted A-Z
-        allMembers = chat.participants.map { p ->
+        allMembers = participants.map { p ->
             GroupMemberItem(
                 userId = p.id,
                 username = p.username,

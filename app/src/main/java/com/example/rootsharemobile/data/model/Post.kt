@@ -2,16 +2,30 @@ package com.example.rootsharemobile.data.model
 
 import com.google.gson.annotations.SerializedName
 
-/**
- * Data class representing a Post from the backend API.
- * Matches the backend schema at /api/posts
- */
+data class PostAuthor(
+    @SerializedName("_id")
+    val id: String = "",
+
+    @SerializedName("username")
+    val username: String = "",
+
+    @SerializedName("profileImageUrl")
+    val profileImageUrl: String? = null
+)
+
+
+ //Data class representing a Post from the backend API.
+ //Matches the backend schema at /api/posts
+ //The backend populates `userId` as a full user object via Mongoose `.populate()`,
+ //so Gson maps it to [PostAuthor]. Use the computed [userId] property when you
+ // need just the ID string (e.g. for Room queries).
+
 data class Post(
     @SerializedName("_id")
     val id: String = "",
 
     @SerializedName("userId")
-    val userId: String = "",
+    val author: PostAuthor? = null,
 
     @SerializedName("plantId")
     val plant: Plant? = null,
@@ -37,11 +51,11 @@ data class Post(
     @SerializedName("updatedAt")
     val updatedAt: String = ""
 ) {
-    // UI helper: extract hashtags from content
+    val userId: String get() = author?.id ?: ""
+
     val tags: List<String>
         get() = Regex("#\\w+").findAll(content).map { it.value }.toList()
 
-    // UI helper: type badge text
     val typeBadge: String
         get() = when (type) {
             PostType.UPDATE -> "Update"
@@ -61,9 +75,6 @@ enum class PostType {
     GIVEAWAY
 }
 
-/**
- * DTO for creating a new post
- */
 data class CreatePostRequest(
     val plantId: String? = null,
     val type: PostType,
@@ -71,9 +82,6 @@ data class CreatePostRequest(
     val images: List<String>? = null
 )
 
-/**
- * DTO for updating an existing post
- */
 data class UpdatePostRequest(
     val plantId: String? = null,
     val type: PostType? = null,

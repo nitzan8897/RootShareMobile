@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/Nitzan Avargil/.claude/skills/**)",
+      "Read(//c/Users/Nitzan Avargil/AndroidStudioProjects/RootShareMobile/**)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\Nitzan Avargil\\AndroidStudioProjects\\RootShareMobile\\app\\src\\main\\res\\layout",
+      "c:\\Users\\Nitzan Avargil\\AndroidStudioProjects\\RootShareMobile\\app\\src\\main\\res\\values",
+      "c:\\Users\\Nitzan Avargil\\AndroidStudioProjects\\RootShareMobile\\app\\src\\main\\res\\drawable"
+    ]
+  }
+}

@@ -58,6 +58,15 @@ class MyPostsViewModel(application: Application) : AndroidViewModel(application)
             database.plantDao().observeUserPlants(userId)
         }
 
+    /** Set the current user ID without triggering a network fetch. Used by HomeFragment. */
+    suspend fun initUserId() {
+        val user = tokenManager.getUser()
+        val userId = user?.id ?: ""
+        if (_currentUserId.value != userId) {
+            _currentUserId.value = userId
+        }
+    }
+
     fun loadPosts(token: String) {
         if (_uiState.value == PostsUiState.Loading) return
         _uiState.value = PostsUiState.Loading

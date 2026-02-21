@@ -77,6 +77,9 @@
 
     <!-- Plant details -->
     <string name="title_plant_details">Plant Details</string>
+
+    <!-- Post details -->
+    <string name="title_post_details">Post Details</string>
     <string name="label_post_count">%1$d posts</string>
     <string name="label_no_posts">No posts yet</string>
     <string name="label_added_on">Added %1$s</string>
@@ -139,10 +142,19 @@
     <string name="label_likes_count">%1$d likes</string>
     <string name="label_comments_count">%1$d comments</string>
 
+    <!-- Comments -->
+    <string name="label_comments">Comments</string>
+    <string name="empty_comments">No comments yet. Be the first!</string>
+    <string name="hint_add_comment">Add a comment…</string>
+    <string name="btn_send_comment">Send comment</string>
+
     <!-- Content descriptions for accessibility -->
     <string name="cd_app_logo">RootShare logo</string>
     <string name="cd_profile_picture">Profile picture</string>
     <string name="cd_plant_image">Plant image</string>
     <string name="cd_post_image">Post image</string>
     <string name="cd_google_logo">Google logo</string>
+    <string name="cd_like_post">Like post</string>
+    <string name="cd_comment_post">Comment on post</string>
+    <string name="cd_create_post">Create new post</string>
 </resources>
